@@ -27,7 +27,6 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ec4899; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #loading-overlay { background: rgba(255,255,255,0.8); z-index: 1000; }
-        /* Scrollbar styling untuk form yang panjang */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -119,10 +118,10 @@
                                 <div><label class="block text-sm text-gray-600 mb-1">Nama Pasien <span class="text-red-500">*</span></label>
                                     <input type="text" name="NAMAPASIEN" required class="w-full border border-gray-300 rounded-md p-2"></div>
                                 
-                                <div><label class="block text-sm text-gray-600 mb-1">Tempat, Tanggal Lahir</label>
-                                    <input type="text" name="TTL" placeholder="Contoh: Jakarta, 01-01-1990" class="w-full border border-gray-300 rounded-md p-2"></div>
+                                <div><label class="block text-sm text-gray-600 mb-1">Tanggal Lahir</label>
+                                    <input type="date" name="TTL" id="TTL" onchange="calculateAge()" class="w-full border border-gray-300 rounded-md p-2"></div>
                                 <div><label class="block text-sm text-gray-600 mb-1">Umur Pasien</label>
-                                    <input type="text" name="UMURPASIEN" class="w-full border border-gray-300 rounded-md p-2"></div>
+                                    <input type="text" name="UMURPASIEN" id="UMURPASIEN" class="w-full border border-gray-300 rounded-md p-2 bg-gray-100" readonly placeholder="Terisi otomatis"></div>
                                 <div><label class="block text-sm text-gray-600 mb-1">Golongan Darah</label>
                                     <select name="GOLONGANDARAH" class="w-full border border-gray-300 rounded-md p-2 bg-white">
                                         <option value="">-</option><option value="A">A</option><option value="B">B</option><option value="AB">AB</option><option value="O">O</option>
@@ -341,7 +340,6 @@
                             </tr>
                         </thead>
                         <tbody id="patient-table-body" class="text-gray-700 text-sm">
-                            <!-- Data disuntikkan oleh JS -->
                             <tr><td colspan="5" class="text-center p-4">Memuat data...</td></tr>
                         </tbody>
                     </table>
@@ -357,11 +355,9 @@
 
         let chartInstance = null;
 
-        // --- SISTEM TAB NAVIGASI ---
         function switchTab(tabId) {
             document.querySelectorAll('.section-block').forEach(el => el.classList.add('section-hidden'));
             document.querySelectorAll('nav button').forEach(el => el.classList.remove('nav-active'));
-            
             document.getElementById(tabId).classList.remove('section-hidden');
             document.getElementById(`tab-${tabId}`).classList.add('nav-active');
 
@@ -370,7 +366,6 @@
             if (tabId === 'form-pasien' && !document.getElementById('RME').value) generateNewRME();
         }
 
-        // --- AUTO GENERATE RME ---
         function generateNewRME() {
             const date = new Date();
             const prefix = "RM" + date.getFullYear().toString().substr(-2) + (date.getMonth()+1).toString().padStart(2,'0');
@@ -395,7 +390,21 @@
             document.getElementById('loading-overlay').classList.add('hidden');
         }
 
-        // --- LOAD DASHBOARD ---
+        // --- AUTO HITUNG UMUR ---
+        function calculateAge() {
+            const ttlVal = document.getElementById('TTL').value;
+            if(ttlVal) {
+                const birthDate = new Date(ttlVal);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                document.getElementById('UMURPASIEN').value = age + " Tahun";
+            }
+        }
+
         async function loadDashboard() {
             if (GAS_URL.includes("TARUH_LINK")) return;
             try {
@@ -406,7 +415,6 @@
                     document.getElementById('stat-total').innerText = data.totalPasien;
                     document.getElementById('stat-pendapatan').innerText = "Rp " + data.pendapatan.toLocaleString('id-ID');
                     document.getElementById('stat-gender').innerText = `${data.jenisKelaminBayi["Laki-laki"] || 0} / ${data.jenisKelaminBayi["Perempuan"] || 0}`;
-                    
                     updateChart(data.trenKunjungan);
                 }
             } catch (e) {
@@ -436,7 +444,6 @@
             });
         }
 
-        // --- LOAD ALL PATIENTS ---
         async function loadPatients() {
             if (GAS_URL.includes("TARUH_LINK")) {
                 document.getElementById('patient-table-body').innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Error: Masukkan URL Web App pada skrip HTML.</td></tr>`;
@@ -478,7 +485,6 @@
             hideLoading();
         }
 
-        // --- FILTER TABEL ---
         function filterTable() {
             let input = document.getElementById("searchInput").value.toLowerCase();
             let rows = document.getElementById("patient-table-body").getElementsByTagName("tr");
@@ -488,7 +494,6 @@
             }
         }
 
-        // --- SUBMIT FORM (SAVE / UPDATE) ---
         async function submitForm(event) {
             event.preventDefault();
             if (GAS_URL.includes("TARUH_LINK")) return Swal.fire("Oops", "URL Web App belum diisi", "error");
@@ -521,7 +526,6 @@
             }
         }
 
-        // --- EDIT PATIENT ---
         async function editPatient(rme) {
             showLoading("Mengambil data...");
             try {
@@ -541,7 +545,6 @@
                             if (val && document.getElementsByName(key)[0].type === "date" && val.includes("T")) {
                                 val = val.split("T")[0];
                             }
-                            // Handle format untuk input type time (jam) agar valid masuk ke form
                             if (val && document.getElementsByName(key)[0].type === "time" && val.includes("T")) {
                                 let d = new Date(val);
                                 val = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
@@ -558,7 +561,6 @@
             }
         }
 
-        // --- GENERATE SLIDE / PDF ---
         async function generateDocument(rme) {
             showLoading("Membuat Dokumen PDF... (Harap tunggu, butuh ~10 detik)");
             try {
@@ -575,15 +577,15 @@
                     document.getElementById('link-slide').href = result.slideUrl;
                     Swal.fire("Sukses", "Dokumen berhasil digenerate!", "success");
                 } else {
-                    Swal.fire("Gagal", result.message, "error");
+                    // Peringatan error sekarang menampilkan pesan asli dari Google Apps Script
+                    Swal.fire("Gagal", result.message || "Gagal membuat dokumen", "error");
                 }
             } catch (e) {
                 hideLoading();
-                Swal.fire("Error Server", "Terjadi kesalahan saat memproses dokumen template. Pastikan ID Template Slide sudah benar di App Script.", "error");
+                Swal.fire("Error Koneksi", "Gagal menghubungi server: " + e.message, "error");
             }
         }
 
-        // INISIALISASI SAAT HALAMAN DIMUAT
         window.onload = () => {
             generateNewRME();
             loadDashboard();
