@@ -3,593 +3,1099 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem RME Klinik Nabilah Pulungan</title>
+    <title>Klinik Nabilah Pulungan - Core System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
-                    colors: { primary: '#ec4899', secondary: '#14b8a6', dark: '#1f2937', light: '#f9fafb' }
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: { 
+                        primary: '#18181b', // zinc-900
+                        secondary: '#3f3f46', // zinc-700
+                        accent: '#f4f4f5', // zinc-100
+                        dark: '#09090b', // zinc-950
+                        light: '#ffffff'
+                    }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #f3f4f6; }
-        .nav-active { border-bottom: 3px solid #ec4899; color: #ec4899; font-weight: 600; }
-        .section-hidden { display: none; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ec4899; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #loading-overlay { background: rgba(255,255,255,0.8); z-index: 1000; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body { background-color: #fafafa; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f4f4f5; }
+        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+        
+        @media print {
+            body { font-size: 11pt; background: white; color: black; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .print-container { width: 100%; padding: 0; margin: 0; box-shadow: none; border: none; }
+            input, select, textarea { border: none !important; background: transparent !important; resize: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; font-weight: 500;}
+            .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        }
+        .step-content { display: none; }
+        .step-content.active { display: block; animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modal & Loader Base */
+        .overlay-base { display: none; }
+        .overlay-base.active { display: flex; animation: fadeIn 0.2s ease-in-out; }
+        
+        .chart-container { position: relative; height: 320px; width: 100%; }
+        
+        input[type="text"], input[type="number"], input[type="date"], input[type="time"], input[type="tel"], textarea, select {
+            border-color: #e4e4e7;
+        }
+        input:focus, textarea:focus, select:focus {
+            --tw-ring-color: #18181b;
+            border-color: #18181b;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #a1a1aa;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
-<body class="font-sans text-gray-800">
+<body class="text-zinc-800 h-screen flex overflow-hidden selection:bg-zinc-200">
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 hidden flex items-center justify-center">
-        <div class="flex flex-col items-center">
-            <div class="loader mb-4"></div>
-            <p class="text-primary font-semibold" id="loading-text">Memproses data...</p>
+    <!-- Global Loading Overlay -->
+    <div id="loading-overlay" class="overlay-base fixed inset-0 bg-white/80 z-50 flex-col items-center justify-center backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+        <h2 class="text-lg font-bold text-zinc-800" id="loading-text">Sinkronisasi Data...</h2>
+        <p class="text-sm text-zinc-500 mt-1">Sistem sedang terhubung ke Cloud</p>
+    </div>
+
+    <!-- MODAL DAFTAR PASIEN INTERAKTIF (Untuk Klik dari Dashboard) -->
+    <div id="list-modal" class="overlay-base fixed inset-0 bg-zinc-900/40 z-50 items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="bg-primary p-5 flex justify-between items-center text-white shrink-0">
+                <h3 class="font-bold text-lg" id="list-modal-title"><i class="fas fa-users mr-2"></i>Daftar Pasien</h3>
+                <button onclick="closeListModal()" class="text-zinc-400 hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-0 overflow-y-auto flex-1">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-zinc-500 uppercase bg-zinc-50 sticky top-0">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">No. RME</th>
+                            <th class="px-6 py-4 font-semibold">Nama Pasien</th>
+                            <th class="px-6 py-4 font-semibold">Bidan PJ</th>
+                            <th class="px-6 py-4 font-semibold text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-table-body" class="divide-y divide-zinc-100">
+                        <!-- Data disuntik via JS -->
+                    </tbody>
+                </table>
+                <div id="modal-empty-state" class="hidden py-12 text-center text-zinc-500">
+                    <i class="fas fa-folder-open text-3xl mb-3 text-zinc-300"></i>
+                    <p>Tidak ada pasien di kategori ini.</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Header & Navigasi -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-hospital-user text-3xl text-primary"></i>
-                <h1 class="text-xl font-bold text-gray-800">RME Klinik Bidan Nabilah</h1>
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 bg-white border-r border-zinc-200 flex flex-col no-print h-full transition-all duration-300 z-20 shrink-0" id="sidebar">
+        <div class="p-6 border-b border-zinc-100 text-center relative flex flex-col items-center">
+            <div class="w-14 h-14 bg-zinc-100 text-primary rounded-2xl flex items-center justify-center mb-4 text-2xl border border-zinc-200 shadow-sm">
+                <i class="fas fa-spa"></i>
+            </div>
+            <h1 class="font-extrabold text-base text-zinc-900 tracking-tight leading-tight uppercase">Klinik Nabilah<br>Pulungan</h1>
+            <p class="text-[10px] font-medium text-zinc-400 tracking-widest uppercase mt-1">Core System</p>
+            
+            <div id="mode-badge" class="mt-4 w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-lg text-xs font-bold border border-zinc-200 transition-colors">
+                <i class="fas fa-shield-alt"></i> Mode Utama
             </div>
         </div>
-        <nav class="flex justify-center space-x-6 border-t border-gray-100 bg-white shadow-sm overflow-x-auto px-4">
-            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="py-3 px-2 text-gray-500 hover:text-primary transition nav-active"><i class="fas fa-chart-pie mr-2"></i>Dashboard</button>
-            <button onclick="switchTab('form-pasien')" id="tab-form-pasien" class="py-3 px-2 text-gray-500 hover:text-primary transition"><i class="fas fa-user-plus mr-2"></i>Input Pasien</button>
-            <button onclick="switchTab('data-pasien')" id="tab-data-pasien" class="py-3 px-2 text-gray-500 hover:text-primary transition"><i class="fas fa-users mr-2"></i>Daftar Pasien</button>
-        </nav>
-    </header>
+        
+        <div class="flex-1 overflow-y-auto p-4 space-y-1.5" id="nav-steps">
+            <!-- Nav Items Generated via JS -->
+        </div>
 
-    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="p-4 border-t border-zinc-100 flex flex-col gap-2.5">
+            <button onclick="saveToDatabase()" id="btn-save-sidebar" class="w-full bg-primary hover:bg-zinc-800 text-white font-semibold py-2.5 rounded-xl transition-all shadow-md shadow-zinc-900/10 flex items-center justify-center gap-2 text-sm">
+                <i class="fas fa-cloud-upload-alt"></i> Simpan ke Cloud
+            </button>
+            <button onclick="resetForm()" class="w-full bg-white hover:bg-zinc-50 text-zinc-700 font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm border border-zinc-300 shadow-sm">
+                <i class="fas fa-file-medical"></i> Form Pendaftaran Baru
+            </button>
+        </div>
+    </aside>
 
-        <!-- SECTION: DASHBOARD -->
-        <section id="dashboard" class="section-block">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-primary">
-                    <h3 class="text-gray-500 text-sm font-medium">Total Pasien</h3>
-                    <p class="text-3xl font-bold text-gray-800 mt-2" id="stat-total">0</p>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-secondary">
-                    <h3 class="text-gray-500 text-sm font-medium">Estimasi Pendapatan</h3>
-                    <p class="text-3xl font-bold text-gray-800 mt-2" id="stat-pendapatan">Rp 0</p>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
-                    <h3 class="text-gray-500 text-sm font-medium">Kelahiran (L/P)</h3>
-                    <p class="text-3xl font-bold text-gray-800 mt-2" id="stat-gender">0 / 0</p>
-                </div>
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#fafafa]">
+        
+        <!-- HeaderBar -->
+        <header class="h-16 bg-white/80 backdrop-blur-md border-b border-zinc-200 flex items-center justify-between px-6 md:px-10 no-print z-10 shrink-0 sticky top-0">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-zinc-400 hover:text-primary transition"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="font-bold text-lg text-zinc-800" id="header-title">Dashboard</h2>
             </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <h3 class="font-semibold text-gray-700 mb-4">Tren Kunjungan Bulanan</h3>
-                    <canvas id="kunjunganChart" height="200"></canvas>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <h3 class="font-semibold text-gray-700 mb-4">Akses Cepat</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <button onclick="switchTab('form-pasien')" class="bg-pink-50 hover:bg-pink-100 text-primary p-4 rounded-lg flex flex-col items-center justify-center transition">
-                            <i class="fas fa-plus-circle text-2xl mb-2"></i> Pasien Baru
-                        </button>
-                        <button onclick="loadPatients()" class="bg-teal-50 hover:bg-teal-100 text-secondary p-4 rounded-lg flex flex-col items-center justify-center transition">
-                            <i class="fas fa-sync text-2xl mb-2"></i> Refresh Data
-                        </button>
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-medium text-zinc-500 hidden md:block"><i class="fas fa-circle text-[8px] text-green-500 mr-1.5"></i>Sistem Online</span>
+                <button onclick="syncAllData()" class="w-8 h-8 rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-primary flex items-center justify-center transition" title="Refresh Data">
+                    <i class="fas fa-sync-alt text-xs"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Form/Content Area -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8" id="main-scroll">
+            <div class="max-w-6xl mx-auto print-container">
+                
+                <form id="emr-form" onsubmit="return false;">
+                    
+                    <!-- TAHAP 1: DASHBOARD INTERAKTIF -->
+                    <div id="step-1" class="step-content active">
+                         <div class="flex justify-between items-end mb-6">
+                             <div>
+                                <h3 class="text-2xl font-bold text-zinc-900 tracking-tight">Executive Dashboard</h3>
+                                <p class="text-sm text-zinc-500 mt-1">Ringkasan perjalanan medis pasien secara keseluruhan.</p>
+                             </div>
+                         </div>
+                         
+                         <!-- Overview Cards (Clickable) -->
+                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                            <div onclick="openInteractiveList('Semua Pasien')" class="bg-primary p-5 rounded-2xl text-white shadow-lg shadow-zinc-900/10 cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group relative overflow-hidden border border-zinc-800">
+                                <div class="absolute right-[-10px] top-[-10px] text-5xl opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-users"></i></div>
+                                <h4 class="text-zinc-400 text-xs font-semibold mb-1 uppercase tracking-wider">Total Terdaftar</h4>
+                                <p class="text-3xl font-bold" id="dash-total">0</p>
+                            </div>
+                            <div onclick="openInteractiveList('Selesai Bersalin di Klinik')" class="bg-white p-5 rounded-2xl text-zinc-800 border border-zinc-200 shadow-sm cursor-pointer hover:-translate-y-1 hover:shadow-md transition-all duration-300 group">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="text-zinc-500 text-xs font-semibold mb-1 uppercase tracking-wider">Lahir di Klinik</h4>
+                                        <p class="text-3xl font-bold text-primary" id="dash-bersalin">0</p>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-colors"><i class="fas fa-baby-carriage"></i></div>
+                                </div>
+                            </div>
+                            <div onclick="openInteractiveList('Aktif/Dalam Perawatan')" class="bg-white p-5 rounded-2xl text-zinc-800 border border-zinc-200 shadow-sm cursor-pointer hover:-translate-y-1 hover:shadow-md transition-all duration-300 group">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="text-zinc-500 text-xs font-semibold mb-1 uppercase tracking-wider">Dalam Perawatan</h4>
+                                        <p class="text-3xl font-bold text-primary" id="dash-aktif">0</p>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-colors"><i class="fas fa-heartbeat"></i></div>
+                                </div>
+                            </div>
+                            <div onclick="openInteractiveList('Batal Bersalin / Rujuk Keluar')" class="bg-white p-5 rounded-2xl text-zinc-800 border border-zinc-200 shadow-sm cursor-pointer hover:-translate-y-1 hover:shadow-md transition-all duration-300 group">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="text-zinc-500 text-xs font-semibold mb-1 uppercase tracking-wider">Batal / Rujuk</h4>
+                                        <p class="text-3xl font-bold text-primary" id="dash-rujuk">0</p>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-colors"><i class="fas fa-ambulance"></i></div>
+                                </div>
+                            </div>
+                         </div>
+
+                         <!-- Charts -->
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-bold text-zinc-800 text-sm"><i class="fas fa-chart-bar mr-2 text-zinc-400"></i>Sebaran Layanan Klinik</h4>
+                                </div>
+                                <div class="chart-container"><canvas id="layananChart"></canvas></div>
+                            </div>
+                            <div class="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-bold text-zinc-800 text-sm"><i class="fas fa-chart-pie mr-2 text-zinc-400"></i>Status Perjalanan (Funnel)</h4>
+                                </div>
+                                <div class="chart-container"><canvas id="statusChart"></canvas></div>
+                            </div>
+                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- SECTION: FORM PASIEN (LENGKAP) -->
-        <section id="form-pasien" class="section-block section-hidden">
-            <div class="bg-white rounded-xl shadow-sm p-6 md:p-8">
-                <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    <h2 class="text-2xl font-bold text-gray-800" id="form-title">Form Rekam Medis</h2>
-                    <button type="button" onclick="resetForm()" class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded"><i class="fas fa-redo mr-1"></i> Reset</button>
-                </div>
+                    <!-- TAHAP 2: DATABASE PASIEN (TABEL PENCARIAN) -->
+                    <div id="step-2" class="step-content">
+                        <div class="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden flex flex-col min-h-[500px]">
+                            <!-- Header Search -->
+                            <div class="p-5 border-b border-zinc-100 bg-zinc-50/50 flex flex-col md:flex-row gap-4 justify-between md:items-center">
+                                <div>
+                                    <h3 class="font-bold text-lg text-zinc-800">Database Rekam Medis</h3>
+                                    <p class="text-xs text-zinc-500 mt-0.5">Cari dan pilih pasien untuk melanjutkan pengisian rekam medis.</p>
+                                </div>
+                                <div class="relative w-full md:w-80">
+                                    <input type="text" id="main-search-input" onkeyup="filterPatientTable()" placeholder="Ketik nama, RME, atau keluhan..." class="w-full pl-10 pr-4 py-2.5 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm bg-white transition">
+                                    <i class="fas fa-search absolute left-4 top-3.5 text-zinc-400"></i>
+                                </div>
+                            </div>
 
-                <form id="emrForm" onsubmit="submitForm(event)">
-                    <div class="grid grid-cols-1 gap-6">
+                            <!-- Table Content -->
+                            <div class="overflow-x-auto flex-1">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="text-xs text-zinc-500 uppercase bg-zinc-50 border-b border-zinc-200">
+                                        <tr>
+                                            <th class="px-5 py-4 font-semibold">Tgl. Daftar</th>
+                                            <th class="px-5 py-4 font-semibold">No. RME</th>
+                                            <th class="px-5 py-4 font-semibold">Nama Pasien</th>
+                                            <th class="px-5 py-4 font-semibold">Layanan</th>
+                                            <th class="px-5 py-4 font-semibold">Status Akhir</th>
+                                            <th class="px-5 py-4 font-semibold text-center">Tindakan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="database-table-body" class="divide-y divide-zinc-100 text-zinc-700">
+                                        <!-- Diisi otomatis oleh JavaScript -->
+                                        <tr><td colspan="6" class="text-center py-8 text-zinc-400"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat database...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AREA KONTEN FORMULIR (Dibungkus card putih estetis) -->
+                    <div id="form-wrapper" class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 md:p-8 mt-2 hidden-on-dash">
                         
-                        <!-- 1. Identitas Pasien -->
-                        <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                            <h3 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fas fa-user mr-2 text-primary"></i>1. Identitas Pasien</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div><label class="block text-sm text-gray-600 mb-1">No. RME <span class="text-red-500">*</span></label>
-                                    <input type="text" name="RME" id="RME" required readonly class="w-full border-gray-300 rounded-md bg-gray-200 p-2 cursor-not-allowed"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">NIK</label>
-                                    <input type="text" name="NIK" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Nama Pasien <span class="text-red-500">*</span></label>
-                                    <input type="text" name="NAMAPASIEN" required class="w-full border border-gray-300 rounded-md p-2"></div>
-                                
-                                <div><label class="block text-sm text-gray-600 mb-1">Tanggal Lahir</label>
-                                    <input type="date" name="TTL" id="TTL" onchange="calculateAge()" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Umur Pasien</label>
-                                    <input type="text" name="UMURPASIEN" id="UMURPASIEN" class="w-full border border-gray-300 rounded-md p-2 bg-gray-100" readonly placeholder="Terisi otomatis"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Golongan Darah</label>
-                                    <select name="GOLONGANDARAH" class="w-full border border-gray-300 rounded-md p-2 bg-white">
-                                        <option value="">-</option><option value="A">A</option><option value="B">B</option><option value="AB">AB</option><option value="O">O</option>
-                                    </select></div>
-                                
-                                <div><label class="block text-sm text-gray-600 mb-1">No. HP / WA</label>
-                                    <input type="text" name="NOHP" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Instagram</label>
-                                    <input type="text" name="INSTAGRAM" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Pendidikan / Pekerjaan</label>
-                                    <input type="text" name="PENDIDIKANPEKERJAANPASIEN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                
-                                <div class="md:col-span-2"><label class="block text-sm text-gray-600 mb-1">Alamat Lengkap</label>
-                                    <textarea name="ALAMAT" rows="2" class="w-full border border-gray-300 rounded-md p-2"></textarea></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Riwayat Alergi</label>
-                                    <textarea name="RIWAYATALERGI" rows="2" class="w-full border border-gray-300 rounded-md p-2"></textarea></div>
+                        <!-- TAHAP 3: IDENTITAS & LAYANAN -->
+                        <div id="step-3" class="step-content">
+                            <div class="mb-6 flex flex-col md:flex-row justify-between md:items-end border-b border-zinc-100 pb-5 no-print gap-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-zinc-900 tracking-tight">Pendaftaran & Identitas</h3>
+                                    <p class="text-sm text-zinc-500 mt-1">Lengkapi data dasar dan pilih rute layanan pasien.</p>
+                                </div>
+                                <div class="text-right">
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Log Kedatangan</label>
+                                    <input type="text" id="TIMESTAMP" name="TIMESTAMP" class="bg-zinc-50 border border-zinc-200 text-zinc-700 text-sm rounded-lg px-3 py-2 w-48 text-right font-medium" readonly>
+                                </div>
+                            </div>
+
+                            <!-- PIC & Layanan -->
+                            <div class="mb-8 bg-zinc-50 p-6 rounded-2xl border border-zinc-200">
+                                <div class="mb-6">
+                                    <label class="block text-sm font-bold text-zinc-800 mb-1">Bidan Penanggung Jawab (PIC)</label>
+                                    <p class="text-xs text-zinc-500 mb-3">Siapa Bidan utama yang memegang pasien ini secara keseluruhan?</p>
+                                    <input type="text" name="BIDAN_PJ" class="w-full md:w-1/2 border border-zinc-300 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary font-semibold text-zinc-800 shadow-sm" placeholder="Contoh: Bdn. Aisyah">
+                                </div>
+
+                                <label class="block text-sm font-bold text-zinc-800 mb-3">Rute Layanan (Bisa pilih lebih dari satu)</label>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <label class="flex items-center p-3 border border-zinc-200 rounded-xl cursor-pointer hover:border-zinc-400 hover:bg-white transition shadow-sm bg-white group">
+                                        <input type="checkbox" name="JENISLAYANAN" value="Massage / Spa" class="w-4 h-4 text-primary bg-zinc-100 border-zinc-300 rounded focus:ring-primary">
+                                        <span class="ml-2 text-sm font-semibold text-zinc-700 group-hover:text-primary">Massage / Spa</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-zinc-200 rounded-xl cursor-pointer hover:border-zinc-400 hover:bg-white transition shadow-sm bg-white group">
+                                        <input type="checkbox" name="JENISLAYANAN" value="Senam Hamil" class="w-4 h-4 text-primary bg-zinc-100 border-zinc-300 rounded focus:ring-primary">
+                                        <span class="ml-2 text-sm font-semibold text-zinc-700 group-hover:text-primary">Senam Hamil</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-zinc-200 rounded-xl cursor-pointer hover:border-zinc-400 hover:bg-white transition shadow-sm bg-white group">
+                                        <input type="checkbox" name="JENISLAYANAN" value="USG" class="w-4 h-4 text-primary bg-zinc-100 border-zinc-300 rounded focus:ring-primary">
+                                        <span class="ml-2 text-sm font-semibold text-zinc-700 group-hover:text-primary">USG</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-zinc-200 rounded-xl cursor-pointer hover:border-zinc-400 hover:bg-white transition shadow-sm bg-white group">
+                                        <input type="checkbox" name="JENISLAYANAN" value="Periksa ANC" class="w-4 h-4 text-primary bg-zinc-100 border-zinc-300 rounded focus:ring-primary">
+                                        <span class="ml-2 text-sm font-semibold text-zinc-700 group-hover:text-primary">Periksa ANC</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-zinc-200 rounded-xl cursor-pointer hover:border-zinc-400 hover:bg-white transition shadow-sm bg-white group">
+                                        <input type="checkbox" name="JENISLAYANAN" value="Bersalin" class="w-4 h-4 text-primary bg-zinc-100 border-zinc-300 rounded focus:ring-primary">
+                                        <span class="ml-2 text-sm font-semibold text-zinc-700 group-hover:text-primary">Bersalin</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 print-grid">
+                                <!-- Identitas Pasien -->
+                                <div class="space-y-4">
+                                    <h4 class="font-bold text-zinc-800 mb-2 flex items-center gap-2 border-b border-zinc-200 pb-2"><i class="fas fa-female text-zinc-400"></i> Identitas Pasien</h4>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-zinc-500 mb-1">No. Rekam Medis (RME) *</label>
+                                        <input type="text" id="RME" name="RME" class="w-full border border-zinc-200 rounded-lg px-3 py-2.5 text-sm bg-zinc-100 font-bold text-zinc-500 cursor-not-allowed" readonly title="Dibuat otomatis oleh sistem">
+                                    </div>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Nama Lengkap Pasien</label><input type="text" name="NAMAPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary font-medium" placeholder="Contoh: Ny. Nabilah"></div>
+                                    
+                                    <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+                                        <label class="block text-xs font-bold text-zinc-700 mb-3 uppercase tracking-wider">Lahir & Usia</label>
+                                        <div class="grid grid-cols-2 gap-3 mb-3">
+                                            <div>
+                                                <label class="block text-[10px] font-semibold text-zinc-500 mb-1">TEMPAT LAHIR</label>
+                                                <input type="text" id="tempat_lahir_input" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Contoh: Padangsidimpuan">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-semibold text-zinc-500 mb-1">TANGGAL LAHIR</label>
+                                                <input type="date" id="tgl_lahir_input" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary" onchange="calculateAge()">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-semibold text-zinc-500 mb-1">UMUR OTOMATIS</label>
+                                            <input type="text" name="UMURPASIEN" class="w-full border border-zinc-300 bg-white rounded-lg px-3 py-2 text-sm font-bold text-zinc-800 focus:outline-none shadow-sm" readonly placeholder="Pilih tanggal lahir untuk memunculkan umur...">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Usia Menikah</label><input type="text" name="USIAMENIKAHPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary" placeholder="Contoh: 24 Tahun"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Jlh Saudara Kandung</label><input type="text" name="SIBLINGSPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary" placeholder="Contoh: 3 Orang"></div>
+                                    </div>
+
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">NIK KTP</label><input type="text" name="NIK" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Contoh: 1271234567890"></div>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Pendidikan & Pekerjaan</label><input type="text" name="PENDIDIKANPEKERJAANPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Contoh: S1 / Guru PNS"></div>
+                                    
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Hobi</label><input type="text" name="HOBIPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary" placeholder="Contoh: Membaca"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Makanan Favorit</label><input type="text" name="MAKANANFAVORITPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary" placeholder="Contoh: Nasi Goreng"></div>
+                                    </div>
+                                </div>
+                                <!-- Identitas Suami -->
+                                <div class="space-y-4">
+                                    <h4 class="font-bold text-zinc-800 mb-2 flex items-center gap-2 border-b border-zinc-200 pb-2"><i class="fas fa-user-tie text-zinc-400"></i> Identitas Suami / Wali</h4>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Nama Suami / Wali</label><input type="text" name="NAMASUAMI" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary font-medium" placeholder="Contoh: Tn. Budi"></div>
+                                    
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Umur Suami</label><input type="text" name="UMURWALI" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Contoh: 30 Tahun"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">No. WhatsApp</label><input type="tel" name="NOHP" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Contoh: 08123456789"></div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Usia Menikah Suami</label><input type="text" name="USIAMENIKAHWALI" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary" placeholder="Contoh: 28 Tahun"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Jlh Saudara Suami</label><input type="text" name="SIBLINGSSUAMI" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary" placeholder="Contoh: 2 Orang"></div>
+                                    </div>
+
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Pendidikan & Pekerjaan Suami</label><input type="text" name="PENDIDIKANPEKERJAANWALI" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Contoh: SMA / Wiraswasta"></div>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Akun Instagram</label><input type="text" name="INSTAGRAM" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary" placeholder="Contoh: @nabilah.pulungan (Boleh kosong)"></div>
+
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Alamat Lengkap</label><textarea name="ALAMAT" rows="4" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary leading-relaxed" placeholder="Contoh: Jl. Kemuning No. 1, Kel. Ujung Padang, Padangsidimpuan Selatan..."></textarea></div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 2. Data Suami / Wali -->
-                        <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
-                            <h3 class="font-bold text-gray-800 mb-4 border-b border-blue-200 pb-2"><i class="fas fa-user-tie mr-2 text-blue-500"></i>2. Data Suami / Wali</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div><label class="block text-sm text-gray-600 mb-1">Nama Suami / Wali</label>
-                                    <input type="text" name="NAMASUAMI" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Umur Suami / Wali</label>
-                                    <input type="text" name="UMURWALI" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Pendidikan / Pekerjaan Suami</label>
-                                    <input type="text" name="PENDIDIKANPEKERJAANSUAMI" class="w-full border border-gray-300 rounded-md p-2"></div>
+                        <!-- Tahap 4: Anamnesa -->
+                        <div id="step-4" class="step-content">
+                            <h3 class="text-xl font-bold text-zinc-900 tracking-tight mb-6 border-b border-zinc-100 pb-4">Anamnesa & Riwayat Medis</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 print-grid">
+                                <div class="space-y-5">
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Keluhan Utama</label><textarea name="KELUHAN" rows="3" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary bg-zinc-50/50" placeholder="Contoh: Ibu merasa pusing, mual pagi hari, dan nyeri punggung sejak 2 hari yang lalu..."></textarea></div>
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Gravida (G)</label><input type="text" name="GPA_G" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center" placeholder="Cth: 1"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Partus (P)</label><input type="text" name="GPA_P" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center" placeholder="Cth: 0"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Abortus (A)</label><input type="text" name="GPA_A" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center" placeholder="Cth: 0"></div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Siklus Menstruasi</label><input type="text" name="SIKLUSMENSTRUASIPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary" placeholder="Contoh: Teratur, 28 hari"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">HPHT</label><input type="date" name="HPHTPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary"></div>
+                                    </div>
+                                </div>
+                                <div class="space-y-5">
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Hari Perkiraan Lahir (HPL)</label><input type="date" name="HPL" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm focus:border-primary"></div>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Usia Kehamilan (UK)</label><input type="text" name="UKPASIEN" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-medium" placeholder="Contoh: 32 Minggu 4 Hari"></div>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Riwayat Penyakit / Alergi Obat</label><input type="text" name="ALERGI" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm" placeholder="Contoh: Alergi Amoxicillin, Asma (Ketik '-' jika tidak ada)"></div>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Diagnosa Awal</label><input type="text" name="DIAGNOSA" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-bold text-zinc-800 bg-zinc-50" placeholder="Contoh: G1P0A0 Hamil 32 Minggu Janin Tunggal Hidup"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tahap 5: Tanda Vital -->
+                        <div id="step-5" class="step-content">
+                            <h3 class="text-xl font-bold text-zinc-900 tracking-tight mb-6 border-b border-zinc-100 pb-4">Pemeriksaan Tanda Vital</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 print-grid">
+                                <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200"><label class="block text-[10px] uppercase font-bold text-zinc-500 mb-2">Tensi (TD)</label><input type="text" name="TDPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center font-bold text-zinc-800" placeholder="Cth: 120/80"></div>
+                                <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200"><label class="block text-[10px] uppercase font-bold text-zinc-500 mb-2">Nadi</label><input type="text" name="NPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center font-bold text-zinc-800" placeholder="Cth: 82 x/m"></div>
+                                <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200"><label class="block text-[10px] uppercase font-bold text-zinc-500 mb-2">Suhu</label><input type="text" name="SPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center font-bold text-zinc-800" placeholder="Cth: 36.5 C"></div>
+                                <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200"><label class="block text-[10px] uppercase font-bold text-zinc-500 mb-2">Pernapasan</label><input type="text" name="PPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center font-bold text-zinc-800" placeholder="Cth: 20 x/m"></div>
+                                <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200"><label class="block text-[10px] uppercase font-bold text-zinc-500 mb-2">Tinggi (cm)</label><input type="text" name="TBPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center font-bold text-zinc-800" placeholder="Cth: 158"></div>
+                                <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200"><label class="block text-[10px] uppercase font-bold text-zinc-500 mb-2">LILA (cm)</label><input type="text" name="lila" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center font-bold text-zinc-800" placeholder="Cth: 24.5"></div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200"><label class="block text-xs font-semibold text-zinc-500 mb-2">Berat Badan Awal / Sebelum Hamil</label><input type="text" name="BBSEBELUMHAMILPASIEN" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-bold text-zinc-800" placeholder="Contoh: 55 kg"></div>
+                                <div class="bg-zinc-50 p-4 rounded-xl border border-zinc-200"><label class="block text-xs font-semibold text-zinc-500 mb-2">Berat Badan Saat Ini (Sekarang)</label><input type="text" name="BBSETELAHHAMILPASIEN" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-bold text-zinc-800" placeholder="Contoh: 62 kg"></div>
                             </div>
                         </div>
 
-                        <!-- 3. Anamnesa & Riwayat Kehamilan -->
-                        <div class="bg-pink-50 p-5 rounded-lg border border-pink-100">
-                            <h3 class="font-bold text-gray-800 mb-4 border-b border-pink-200 pb-2"><i class="fas fa-clipboard-list mr-2 text-pink-500"></i>3. Anamnesa & Riwayat Kehamilan</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div class="md:col-span-4"><label class="block text-sm text-gray-600 mb-1">Keluhan Utama</label>
-                                    <textarea name="KELUHAN" rows="2" class="w-full border border-gray-300 rounded-md p-2"></textarea></div>
-                                
-                                <div><label class="block text-sm text-gray-600 mb-1">Gravida (G)</label>
-                                    <input type="text" name="GRAVIDA" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Partus (P)</label>
-                                    <input type="text" name="PARTUS" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Abortus (A)</label>
-                                    <input type="text" name="ABORTUS" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Usia Kehamilan (UK)</label>
-                                    <input type="text" name="UK" class="w-full border border-gray-300 rounded-md p-2"></div>
+                        <!-- Tahap 6: Pemeriksaan Fisik Terarah -->
+                        <div id="step-6" class="step-content">
+                            <h3 class="text-xl font-bold text-zinc-900 tracking-tight mb-6 border-b border-zinc-100 pb-4">Pemeriksaan Fisik Terarah</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 print-grid">
+                                <div class="space-y-4">
+                                    <div class="bg-white p-4 rounded-xl border border-zinc-200 shadow-sm space-y-4">
+                                        <h4 class="font-bold text-zinc-800 text-sm flex items-center gap-2 border-b border-zinc-100 pb-2"><i class="fas fa-search text-zinc-400"></i> Pemeriksaan Detail</h4>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Mata (Konjungtiva / Sklera)</label><input type="text" name="PERIKSAKONJUNGTIVAPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm mb-2" placeholder="Konjungtiva: Pucat / Merah muda"><input type="text" name="PERIKSASKELERAPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" placeholder="Sklera: Ikterus / Putih Normal"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Leher (Tiroid & Getah Bening)</label><input type="text" name="PERIKSALEHERPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" placeholder="Contoh: Normal, tidak ada pembengkakan"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Payudara (Laktasi)</label><input type="text" name="PERIKSAPAYUDARAPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" placeholder="Contoh: Simetris, Puting menonjol"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Abdomen (Perut Luar)</label><input type="text" name="PERIKSAABDOMENPASIEN" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" placeholder="Contoh: Tampak linea nigra, bekas luka SC (-) "></div>
+                                    </div>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Indikasi Khusus (Kelainan/Area Lain)</label><textarea name="INDIKASI" rows="2" class="w-full border border-zinc-300 rounded-lg px-4 py-3 text-sm focus:border-primary" placeholder="Kosongkan jika tidak ada indikasi khusus..."></textarea></div>
+                                </div>
+                                <div class="space-y-5">
+                                    <div class="bg-zinc-50 p-5 rounded-2xl border border-zinc-200 shadow-sm">
+                                        <h4 class="font-bold text-zinc-800 mb-4 text-sm flex items-center gap-2"><i class="fas fa-baby text-zinc-400"></i> Pemeriksaan Janin</h4>
+                                        <div class="grid grid-cols-3 gap-3 mb-4">
+                                            <div><label class="block text-[10px] font-semibold text-zinc-500 mb-1 uppercase">TFU</label><input type="text" name="TFU" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center" placeholder="Cth: 30 cm"></div>
+                                            <div><label class="block text-[10px] font-semibold text-zinc-500 mb-1 uppercase">Presentasi</label><input type="text" name="PRESENTASI" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center" placeholder="Cth: Kepala"></div>
+                                            <div><label class="block text-[10px] font-semibold text-zinc-500 mb-1 uppercase">DJJ</label><input type="text" name="DJJ" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-center" placeholder="Cth: 140 x/m"></div>
+                                        </div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Temuan Janin / Klinis Lainnya</label><textarea name="TEMUAN" rows="2" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm" placeholder="Contoh: Gerak janin aktif..."></textarea></div>
+                                    </div>
+                                    
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Bidan Pemeriksa / Terapis Sesi Ini</label><input type="text" name="TERAPIS" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-medium" placeholder="Contoh: Bdn. Aisyah"></div>
+                                    <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Catatan Ekstra / Instruksi Dokter</label><textarea name="CATATAN" rows="2" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm" placeholder="Contoh: Perbanyak minum air, bed rest 2 hari..."></textarea></div>
+                                    
+                                    <!-- FORM INPUT GANTI BIDAN TAHAP 6 -->
+                                    <div class="mt-4 bg-white p-5 rounded-2xl border border-zinc-200">
+                                        <label class="flex items-center cursor-pointer mb-2 group">
+                                            <input type="checkbox" id="toggle-ganti-bidan-6" class="w-4 h-4 text-primary border-zinc-300 rounded focus:ring-primary" onchange="document.getElementById('ganti-bidan-form-6').classList.toggle('hidden', !this.checked)">
+                                            <span class="ml-2 text-xs font-bold text-zinc-700 group-hover:text-primary transition">Ada pergantian bidan sesi ini? (Sakit/Shift)</span>
+                                        </label>
+                                        <div id="ganti-bidan-form-6" class="hidden space-y-3 mt-4 pt-4 border-t border-zinc-200">
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div><label class="block text-[10px] font-semibold text-zinc-500 mb-1">NAMA PENGGANTI</label><input type="text" id="bidan-pengganti-6" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Bidan yang gantiin"></div>
+                                                <div><label class="block text-[10px] font-semibold text-zinc-500 mb-1">ALASAN</label><input type="text" id="alasan-ganti-6" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Cth: Shift Habis"></div>
+                                            </div>
+                                            <button type="button" onclick="catatGantiBidan(6)" class="w-full bg-zinc-800 hover:bg-zinc-900 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition shadow-md"><i class="fas fa-save mr-1"></i> Simpan Catatan Pergantian</button>
+                                        </div>
+                                    </div>
 
-                                <div><label class="block text-sm text-gray-600 mb-1">HPHT</label>
-                                    <input type="date" name="HPHT" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">HPL</label>
-                                    <input type="date" name="HPL" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Taksiran Berat Janin (TBJ)</label>
-                                    <input type="text" name="TAKSIRANBERATJANIN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Status Pasien</label>
-                                    <input type="text" name="STATUS" placeholder="Contoh: BPJS/Umum" class="w-full border border-gray-300 rounded-md p-2"></div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 4. Pemeriksaan Fisik & Vital -->
-                        <div class="bg-teal-50 p-5 rounded-lg border border-teal-100">
-                            <h3 class="font-bold text-gray-800 mb-4 border-b border-teal-200 pb-2"><i class="fas fa-stethoscope mr-2 text-teal-500"></i>4. Pemeriksaan Fisik & Vital</h3>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div><label class="block text-sm text-gray-600 mb-1">Tekanan Darah</label>
-                                    <input type="text" name="TEKANANDARAH" placeholder="120/80" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Berat Badan (Kg)</label>
-                                    <input type="number" step="0.1" name="BERATBADAN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Suhu (°C)</label>
-                                    <input type="number" step="0.1" name="SUHU" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Nadi (x/m)</label>
-                                    <input type="text" name="NADI" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                
-                                <div><label class="block text-sm text-gray-600 mb-1">Pernapasan (x/m)</label>
-                                    <input type="text" name="PERNAPASAN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div class="col-span-2 md:col-span-3"><label class="block text-sm text-gray-600 mb-1">Hasil Pemeriksaan Lainnya</label>
-                                    <input type="text" name="HASILPEMERIKSAAN" class="w-full border border-gray-300 rounded-md p-2"></div>
+                        <!-- Tahap 7: Dokumentasi Partus -->
+                        <div id="step-7" class="step-content">
+                            <h3 class="text-xl font-bold text-zinc-900 tracking-tight mb-6 border-b border-zinc-100 pb-4">Dokumentasi Partus / Kelahiran</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 print-grid">
+                                <div class="space-y-6">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Tanggal Lahir Bayi</label><input type="date" name="TANGGALLAHIR" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary"></div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Jam Lahir</label><input type="time" name="JAMLAHIR" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary"></div>
+                                    </div>
+                                    
+                                    <!-- FORM INPUT GANTI BIDAN TAHAP 7 -->
+                                    <div class="bg-zinc-50 p-5 rounded-2xl border border-zinc-200">
+                                        <label class="flex items-center cursor-pointer mb-2 group">
+                                            <input type="checkbox" id="toggle-ganti-bidan-7" class="w-4 h-4 text-primary border-zinc-300 rounded focus:ring-primary" onchange="document.getElementById('ganti-bidan-form-7').classList.toggle('hidden', !this.checked)">
+                                            <span class="ml-2 text-xs font-bold text-zinc-700 group-hover:text-primary transition">Ada pergantian bidan saat proses partus?</span>
+                                        </label>
+                                        <div id="ganti-bidan-form-7" class="hidden space-y-3 mt-4 pt-4 border-t border-zinc-200">
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div><label class="block text-[10px] font-semibold text-zinc-500 mb-1">NAMA PENGGANTI</label><input type="text" id="bidan-pengganti-7" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Bidan penolong"></div>
+                                                <div><label class="block text-[10px] font-semibold text-zinc-500 mb-1">ALASAN</label><input type="text" id="alasan-ganti-7" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Cth: Cito / Darurat"></div>
+                                            </div>
+                                            <button type="button" onclick="catatGantiBidan(7)" class="w-full bg-zinc-800 hover:bg-zinc-900 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition shadow-md"><i class="fas fa-save mr-1"></i> Simpan Catatan</button>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-zinc-800 mb-4 text-sm flex items-center gap-2 border-b border-zinc-200 pb-2"><i class="fas fa-child text-zinc-400"></i> Data Bayi</h4>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-zinc-500 mb-1">Kelamin Bayi</label>
+                                            <select name="JENISKELAMINBAYI" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-medium"><option value="">Pilih Kelamin...</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div><label class="block text-xs font-semibold text-zinc-500 mb-1">BB Bayi (Gram)</label><input type="text" name="BBBAYI" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-medium" placeholder="Contoh: 3200 gram"></div>
+                                            <div><label class="block text-xs font-semibold text-zinc-500 mb-1">PB Bayi (cm)</label><input type="text" name="PBBAYI" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-medium" placeholder="Contoh: 50 cm"></div>
+                                        </div>
+                                        <div><label class="block text-xs font-semibold text-zinc-500 mb-1">Kondisi Lahir</label><input type="text" name="KONDISIBAYI" class="w-full border border-zinc-300 rounded-lg px-4 py-2.5 text-sm font-medium bg-zinc-50" placeholder="Contoh: Menangis Kuat, BBLC Normal"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 5. Pemeriksaan Kebidanan & Lab -->
-                        <div class="bg-purple-50 p-5 rounded-lg border border-purple-100">
-                            <h3 class="font-bold text-gray-800 mb-4 border-b border-purple-200 pb-2"><i class="fas fa-microscope mr-2 text-purple-500"></i>5. Pemeriksaan Kebidanan & Lab</h3>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <!-- Kebidanan -->
-                                <div><label class="block text-sm text-gray-600 mb-1">Fundus Uteri</label>
-                                    <input type="text" name="FUNDUSUTERI" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Letak Janin</label>
-                                    <input type="text" name="LETAKJANIN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Presentasi Janin</label>
-                                    <input type="text" name="PRESENTASIJANIN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">DJJ</label>
-                                    <input type="text" name="DJJ" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div class="col-span-2 md:col-span-4"><label class="block text-sm text-gray-600 mb-1">Hasil USG</label>
-                                    <input type="text" name="USG" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                
-                                <!-- Laboratorium -->
-                                <div><label class="block text-sm text-gray-600 mb-1">HB</label>
-                                    <input type="text" name="HB" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Protein Urin</label>
-                                    <input type="text" name="PROTEINURIN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Glukosa</label>
-                                    <input type="text" name="GLUKOSA" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">HIV</label>
-                                    <input type="text" name="HIV" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Sifilis</label>
-                                    <input type="text" name="SIFILIS" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">HBSAG</label>
-                                    <input type="text" name="HBSAG" class="w-full border border-gray-300 rounded-md p-2"></div>
+                        <!-- TAHAP 8: HISTORI & STATUS PASIEN -->
+                        <div id="step-8" class="step-content">
+                            <div class="mb-6 border-b border-zinc-100 flex justify-between items-end pb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-zinc-900 tracking-tight">Histori & Status Akhir</h3>
+                                    <p class="text-sm text-zinc-500 mt-1">Lacak log perjalanan pasien dari awal rute layanan hingga akhir.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <!-- Kolom Kiri: Status & Log Bidan -->
+                                <div class="md:col-span-1 space-y-6">
+                                    <div class="bg-zinc-50 border border-zinc-200 p-6 rounded-2xl shadow-sm">
+                                        <label class="block text-xs font-bold text-zinc-800 mb-3 uppercase tracking-wider">Status Perjalanan Final</label>
+                                        <select name="STATUS_PASIEN_AKHIR" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary bg-white font-bold text-zinc-900 shadow-sm" onchange="toggleAlasanBatal()">
+                                            <option value="Aktif/Dalam Perawatan">Dalam Perawatan / Aktif</option>
+                                            <option value="Selesai Bersalin di Klinik">SELESAI - Lahir di Klinik</option>
+                                            <option value="Selesai (Hanya Treatment/USG)">SELESAI - Hanya Treatment</option>
+                                            <option value="Batal Bersalin / Rujuk Keluar">BATAL / Rujuk Ke RS</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="form-alasan-batal" class="hidden bg-white border-2 border-zinc-800 p-6 rounded-2xl shadow-sm">
+                                        <label class="block text-xs font-bold text-zinc-900 mb-2 uppercase tracking-wider">Detail Batal / Rujukan</label>
+                                        <textarea name="ALASAN_BATAL_BERSALIN" rows="3" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-sm focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 bg-zinc-50" placeholder="Jelaskan detail RS rujukan atau kondisi pembatalan..."></textarea>
+                                    </div>
+
+                                    <!-- TEXTAREA LOG GANTI BIDAN -->
+                                    <div class="border border-zinc-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                        <div class="bg-zinc-100 px-5 py-3 border-b border-zinc-200">
+                                            <h4 class="font-bold text-zinc-700 text-xs uppercase tracking-wider"><i class="fas fa-user-md mr-2 text-zinc-400"></i>Log Pergantian Bidan</h4>
+                                        </div>
+                                        <div class="p-4 bg-zinc-50/50">
+                                            <textarea id="riwayat-ganti-bidan-log" name="RIWAYAT_GANTI_BIDAN" rows="5" class="w-full border-none focus:ring-0 text-xs text-zinc-600 bg-transparent resize-none leading-relaxed" readonly placeholder="Sistem otomatis mengisi ini jika ada penginputan ganti bidan di tahap sebelumnya..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Kolom Kanan: Log History Kunjungan -->
+                                <div class="md:col-span-2 flex flex-col h-full min-h-[450px]">
+                                    <div class="border border-zinc-200 rounded-2xl overflow-hidden bg-white flex flex-col flex-1 shadow-sm">
+                                        <div class="bg-primary px-5 py-4 border-b border-zinc-800 flex justify-between items-center text-white">
+                                            <h4 class="font-bold text-sm tracking-wide"><i class="fas fa-history mr-2 text-zinc-400"></i>Buku Log Tindakan / Kunjungan</h4>
+                                        </div>
+                                        <div class="p-5 flex-1 bg-zinc-50/30">
+                                            <textarea id="riwayat-text" name="RIWAYAT_KUNJUNGAN" class="w-full border-none focus:ring-0 text-sm text-zinc-700 bg-transparent resize-none h-full leading-loose font-medium" placeholder="[DD/MM/YYYY] - Belum ada riwayat kunjungan. Tambahkan di bawah..."></textarea>
+                                        </div>
+                                        <div class="bg-zinc-100 p-4 border-t border-zinc-200 flex flex-col sm:flex-row gap-3">
+                                            <input type="text" id="input-catatan-baru" class="flex-1 border border-zinc-300 rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary font-medium" placeholder="Ketik tindakan hari ini (Cth: ANC, USG baik)...">
+                                            <button type="button" onclick="tambahCatatan()" class="bg-zinc-800 hover:bg-zinc-900 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition shadow-md whitespace-nowrap">
+                                                <i class="fas fa-paper-plane mr-1"></i> Tambah Log
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 6. Data Persalinan & Bayi -->
-                        <div class="bg-yellow-50 p-5 rounded-lg border border-yellow-100">
-                            <h3 class="font-bold text-gray-800 mb-4 border-b border-yellow-200 pb-2"><i class="fas fa-baby mr-2 text-yellow-500"></i>6. Data Persalinan & Bayi (Jika Ada)</h3>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div><label class="block text-sm text-gray-600 mb-1">Hasil (Bersalin/Tidak)</label>
-                                    <input type="text" name="HASIL" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Tanggal Lahir Bayi</label>
-                                    <input type="date" name="TANGGALLAHIRBAYI" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Jam Lahir</label>
-                                    <input type="time" name="JAMLAHIR" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Jenis Kelamin Bayi</label>
-                                    <select name="JENISKELAMIN" class="w-full border border-gray-300 rounded-md p-2 bg-white">
-                                        <option value="">-</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option>
-                                    </select></div>
-                                
-                                <div><label class="block text-sm text-gray-600 mb-1">Berat Bayi (gram)</label>
-                                    <input type="number" name="BERATBAYI" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Panjang Bayi (cm)</label>
-                                    <input type="number" name="PANJANGBAYI" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Lingkar Kepala (cm)</label>
-                                    <input type="number" name="LINGKARKAPALA" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Lingkar Dada (cm)</label>
-                                    <input type="number" name="LINGKARDADA" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                
-                                <div class="col-span-2 md:col-span-4"><label class="block text-sm text-gray-600 mb-1">Kondisi Bayi Saat Lahir</label>
-                                    <input type="text" name="KONDISIBAYI" class="w-full border border-gray-300 rounded-md p-2"></div>
+                        <!-- TAHAP 9: CETAK STATUS -->
+                        <div id="step-9" class="step-content no-print">
+                            <h3 class="text-2xl font-bold text-zinc-900 tracking-tight mb-2 text-center mt-4">Ekspor Dokumen Medis</h3>
+                            <p class="text-zinc-500 mb-10 max-w-md mx-auto text-center text-sm">Konversi semua data rekam medis di atas ke dalam format Slide PPTX / PDF Resmi Klinik Anda.</p>
+                            
+                            <div class="max-w-2xl mx-auto">
+                                <!-- Generate Slide Template -->
+                                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center relative overflow-hidden shadow-xl">
+                                    <div class="absolute -right-10 -top-10 text-9xl text-zinc-800 opacity-50 pointer-events-none"><i class="fas fa-file-powerpoint"></i></div>
+                                    <div class="w-20 h-20 bg-white/10 text-white rounded-full flex items-center justify-center mx-auto mb-5 text-3xl backdrop-blur-md border border-white/20"><i class="fas fa-magic"></i></div>
+                                    <h4 class="font-bold text-white mb-2 text-lg">Cetak Slide & PDF</h4>
+                                    <p class="text-sm text-zinc-400 mb-6">Sistem akan secara cerdas menanamkan variabel data pasien ini ke dalam Template Google Slides.</p>
+                                    <button type="button" onclick="generateSlideDocument()" class="w-full bg-white hover:bg-zinc-200 text-zinc-900 font-bold py-3.5 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                                        <i class="fas fa-file-pdf"></i> Generate File Dokumen
+                                    </button>
+                                    
+                                    <div id="slide-result" class="mt-5 hidden flex-col gap-3">
+                                        <a id="link-pdf" href="#" target="_blank" class="text-sm font-bold text-zinc-900 bg-emerald-400 py-3 rounded-xl hover:bg-emerald-500 transition shadow-md flex justify-center items-center gap-2"><i class="fas fa-download text-lg"></i> Unduh PDF</a>
+                                        <a id="link-slide" href="#" target="_blank" class="text-sm font-bold text-white bg-zinc-800 border border-zinc-700 py-3 rounded-xl hover:bg-zinc-700 transition flex justify-center items-center gap-2"><i class="fas fa-edit text-lg"></i> Buka File Google Slide</a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 7. Diagnosa, Tindakan, Rujukan & Biaya -->
-                        <div class="bg-green-50 p-5 rounded-lg border border-green-100">
-                            <h3 class="font-bold text-gray-800 mb-4 border-b border-green-200 pb-2"><i class="fas fa-file-invoice-dollar mr-2 text-green-600"></i>7. Diagnosa, Rujukan & Pembayaran</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="md:col-span-3"><label class="block text-sm text-gray-600 mb-1">Diagnosa</label>
-                                    <input type="text" name="DIAGNOSA" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div class="md:col-span-3"><label class="block text-sm text-gray-600 mb-1">Tindakan Medis</label>
-                                    <input type="text" name="TINDAKAN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div class="md:col-span-3"><label class="block text-sm text-gray-600 mb-1">Resep Obat / SAP</label>
-                                    <textarea name="RESEPOBATSAP" rows="2" class="w-full border border-gray-300 rounded-md p-2"></textarea></div>
-                                
-                                <div><label class="block text-sm text-gray-600 mb-1">Tanggal Kembali / Kontrol</label>
-                                    <input type="date" name="TANGGALKEMBALI" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Keterangan Tambahan</label>
-                                    <input type="text" name="KETERANGAN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Total Biaya (Rp)</label>
-                                    <input type="number" name="BIAYA" class="w-full border border-green-400 rounded-md p-2 text-lg font-bold text-green-700" placeholder="0"></div>
+                    </div> <!-- End Form Wrapper -->
 
-                                <!-- Bagian Rujukan -->
-                                <div><label class="block text-sm text-gray-600 mb-1">Tanggal Rujuk</label>
-                                    <input type="date" name="TANGGALRUJUK" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Faskes Rujukan</label>
-                                    <input type="text" name="FASKESRUJUKAN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                                <div><label class="block text-sm text-gray-600 mb-1">Alasan Rujukan</label>
-                                    <input type="text" name="ALASANRUJUKAN" class="w-full border border-gray-300 rounded-md p-2"></div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div class="mt-8 flex justify-end gap-4">
-                        <button type="button" onclick="switchTab('data-pasien')" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition">Batal</button>
-                        <button type="submit" class="px-6 py-2 bg-primary hover:bg-pink-600 text-white rounded-lg font-medium shadow-md transition flex items-center">
-                            <i class="fas fa-save mr-2"></i> Simpan Data Lengkap
-                        </button>
-                    </div>
                 </form>
-
-                <!-- AREA HASIL CETAK DOKUMEN -->
-                <div id="slide-result" class="mt-6 p-4 bg-teal-50 border border-teal-200 rounded-lg hidden flex-col md:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center text-teal-800">
-                        <i class="fas fa-check-circle text-2xl mr-3"></i>
-                        <div>
-                            <p class="font-bold">Dokumen Berhasil Dibuat!</p>
-                            <p class="text-sm">Silakan pilih format unduhan di samping.</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-3">
-                        <a id="link-slide" href="#" target="_blank" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded shadow text-sm font-medium"><i class="fas fa-edit mr-1"></i> Edit di Slides</a>
-                        <a id="link-pdf" href="#" target="_blank" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded shadow text-sm font-medium"><i class="fas fa-file-pdf mr-1"></i> Buka PDF</a>
-                    </div>
-                </div>
             </div>
-        </section>
 
-        <!-- SECTION: DATA PASIEN -->
-        <section id="data-pasien" class="section-block section-hidden">
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                    <h2 class="text-2xl font-bold text-gray-800">Daftar Pasien</h2>
-                    <div class="relative w-full md:w-64">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari Nama / RME..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto rounded-lg border border-gray-200">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
-                                <th class="p-4 border-b">Tgl Periksa</th>
-                                <th class="p-4 border-b">No. RME</th>
-                                <th class="p-4 border-b">Nama Pasien</th>
-                                <th class="p-4 border-b">Keluhan/Diagnosa</th>
-                                <th class="p-4 border-b text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="patient-table-body" class="text-gray-700 text-sm">
-                            <tr><td colspan="5" class="text-center p-4">Memuat data...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+            <!-- Navigation Buttons -->
+            <div class="max-w-6xl mx-auto flex justify-between mt-6 pb-12 no-print" id="bottom-nav">
+                <button type="button" onclick="prevStep()" id="btn-prev" class="px-8 py-3 bg-white border border-zinc-300 text-zinc-700 rounded-xl hover:bg-zinc-50 font-bold hidden transition shadow-sm">Kembali</button>
+                <button type="button" onclick="nextStep()" id="btn-next" class="px-8 py-3 bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 font-bold ml-auto transition shadow-md">Lanjutkan <i class="fas fa-arrow-right ml-2 text-sm"></i></button>
             </div>
-        </section>
-
+        </div>
     </main>
 
+    <!-- Modal Notifikasi (Toast) -->
+    <div id="toast" class="fixed top-5 right-5 bg-zinc-900 text-white px-6 py-4 rounded-2xl shadow-2xl transform -translate-y-24 opacity-0 transition-all duration-400 z-[60] flex items-center gap-4 border border-zinc-700">
+        <i class="fas fa-check-circle text-white text-2xl" id="toast-icon"></i>
+        <div>
+            <h4 class="font-bold text-sm tracking-wide" id="toast-title">Notifikasi</h4>
+            <p class="text-xs text-zinc-300 font-medium mt-0.5" id="toast-msg">Pesan disini</p>
+        </div>
+    </div>
+
     <script>
-        // MASUKKAN LINK WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
+        // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyVn0kf82pMjySllGE_Oxnsnul5vv8Q-_PCXsdHDwx41WlLXSaMTLoyuHi2Jcd4z2SXYQ/exec"; 
 
-        let chartInstance = null;
+        const steps = [
+            { id: 1, title: "Dashboard", icon: "fa-chart-pie", type: "system" },
+            { id: 2, title: "Database Pasien", icon: "fa-database", type: "system" },
+            { id: 3, title: "Identitas", icon: "fa-address-card", type: "form" },
+            { id: 4, title: "Anamnesa", icon: "fa-notes-medical", type: "form" },
+            { id: 5, title: "Tanda Vital", icon: "fa-heartbeat", type: "form" },
+            { id: 6, title: "Pemeriksaan", icon: "fa-stethoscope", type: "form" },
+            { id: 7, title: "Partus", icon: "fa-baby-carriage", type: "form" },
+            { id: 8, title: "Histori Pasien", icon: "fa-history", type: "form" },
+            { id: 9, title: "Ekspor File", icon: "fa-file-pdf", type: "form" }
+        ];
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.section-block').forEach(el => el.classList.add('section-hidden'));
-            document.querySelectorAll('nav button').forEach(el => el.classList.remove('nav-active'));
-            document.getElementById(tabId).classList.remove('section-hidden');
-            document.getElementById(`tab-${tabId}`).classList.add('nav-active');
+        let currentStep = 1;
+        let isEditMode = false; 
+        let chartLayanan, chartStatus;
+        
+        let windowAllPatientsData = [];
 
-            if (tabId === 'dashboard') loadDashboard();
-            if (tabId === 'data-pasien') loadPatients();
-            if (tabId === 'form-pasien' && !document.getElementById('RME').value) generateNewRME();
-        }
-
-        function generateNewRME() {
-            const date = new Date();
-            const prefix = "RM" + date.getFullYear().toString().substr(-2) + (date.getMonth()+1).toString().padStart(2,'0');
-            const randomStr = Math.floor(1000 + Math.random() * 9000);
-            document.getElementById('RME').value = prefix + "-" + randomStr;
-        }
-
-        function resetForm() {
-            document.getElementById('emrForm').reset();
-            document.getElementById('slide-result').classList.add('hidden');
-            document.getElementById('slide-result').classList.remove('flex');
-            document.getElementById('form-title').innerText = "Form Rekam Medis (Baru)";
-            generateNewRME();
-        }
-
-        function showLoading(text = "Memproses...") {
-            document.getElementById('loading-text').innerText = text;
-            document.getElementById('loading-overlay').classList.remove('hidden');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading-overlay').classList.add('hidden');
-        }
-
-        // --- AUTO HITUNG UMUR ---
         function calculateAge() {
-            const ttlVal = document.getElementById('TTL').value;
-            if(ttlVal) {
-                const birthDate = new Date(ttlVal);
-                const today = new Date();
-                let age = today.getFullYear() - birthDate.getFullYear();
-                const m = today.getMonth() - birthDate.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                    age--;
-                }
-                document.getElementById('UMURPASIEN').value = age + " Tahun";
+            const birthDateStr = document.getElementById('tgl_lahir_input').value;
+            if(!birthDateStr) return;
+            
+            const birthDate = new Date(birthDateStr);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
             }
+            document.querySelector('input[name="UMURPASIEN"]').value = age + " Tahun";
         }
 
-        async function loadDashboard() {
-            if (GAS_URL.includes("TARUH_LINK")) return;
-            try {
-                const res = await fetch(`${GAS_URL}?action=dashboard`);
-                const result = await res.json();
-                if(result.status === "success") {
-                    const data = result.data;
-                    document.getElementById('stat-total').innerText = data.totalPasien;
-                    document.getElementById('stat-pendapatan').innerText = "Rp " + data.pendapatan.toLocaleString('id-ID');
-                    document.getElementById('stat-gender').innerText = `${data.jenisKelaminBayi["Laki-laki"] || 0} / ${data.jenisKelaminBayi["Perempuan"] || 0}`;
-                    updateChart(data.trenKunjungan);
-                }
-            } catch (e) {
-                console.error("Dashboard Error:", e);
-            }
+        function setLoading(isActive, text = "Memproses Data...") {
+            const loader = document.getElementById('loading-overlay');
+            document.getElementById('loading-text').textContent = text;
+            if(isActive) loader.classList.add('active');
+            else loader.classList.remove('active');
         }
 
-        function updateChart(trenData) {
-            const ctx = document.getElementById('kunjunganChart').getContext('2d');
-            const labels = Object.keys(trenData).sort();
-            const values = labels.map(label => trenData[label]);
+        function openInteractiveList(statusFilter) {
+            document.getElementById('list-modal').classList.add('active');
+            document.getElementById('list-modal-title').innerHTML = `<i class="fas fa-list mr-2"></i> ${statusFilter}`;
+            
+            const tbody = document.getElementById('modal-table-body');
+            const emptyState = document.getElementById('modal-empty-state');
+            tbody.innerHTML = '';
+            
+            let filtered = [];
+            if(statusFilter === 'Semua Pasien') {
+                filtered = windowAllPatientsData;
+            } else if (statusFilter === 'Aktif/Dalam Perawatan') {
+                filtered = windowAllPatientsData.filter(p => !p.STATUS_PASIEN_AKHIR || p.STATUS_PASIEN_AKHIR === statusFilter);
+            } else {
+                filtered = windowAllPatientsData.filter(p => p.STATUS_PASIEN_AKHIR === statusFilter);
+            }
 
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Jumlah Kunjungan',
-                        data: values,
-                        borderColor: '#ec4899',
-                        backgroundColor: 'rgba(236, 72, 153, 0.2)',
-                        borderWidth: 2, fill: true, tension: 0.3
-                    }]
-                },
-                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            if(filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('block');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('block');
+                
+                filtered.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = "bg-white hover:bg-zinc-50 border-b border-zinc-100 transition group";
+                    tr.innerHTML = `
+                        <td class="px-6 py-3 font-mono text-xs font-bold text-zinc-600">${p.RME || '-'}</td>
+                        <td class="px-6 py-3 font-semibold text-zinc-900">${p.NAMAPASIEN || 'Tanpa Nama'}</td>
+                        <td class="px-6 py-3 text-zinc-500">${p.BIDAN_PJ || '-'}</td>
+                        <td class="px-6 py-3 text-right">
+                            <button onclick="editPatientByData('${p.RME}')" class="text-xs bg-white border border-zinc-200 text-zinc-700 px-3 py-1.5 rounded-lg hover:bg-primary hover:text-white transition font-bold shadow-sm">Buka Data</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+        
+        function closeListModal() {
+            document.getElementById('list-modal').classList.remove('active');
+        }
+
+        function renderPatientTable(dataArray) {
+            const tbody = document.getElementById('database-table-body');
+            tbody.innerHTML = '';
+            
+            if(!dataArray || dataArray.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-zinc-400 font-medium">Tidak ada data pasien yang ditemukan.</td></tr>`;
+                return;
+            }
+
+            dataArray.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-white hover:bg-zinc-50 border-b border-zinc-100 transition duration-150";
+                
+                let tgl = "-";
+                if(p.TIMESTAMP) tgl = p.TIMESTAMP.split(' ')[0] || p.TIMESTAMP.substring(0,10);
+                
+                let statusBadge = "";
+                const st = p.STATUS_PASIEN_AKHIR || "Aktif/Dalam Perawatan";
+                if(st.includes("Bersalin di Klinik")) statusBadge = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-md text-[10px] font-bold">SELESAI BERSALIN</span>`;
+                else if(st.includes("Batal")) statusBadge = `<span class="bg-rose-100 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-md text-[10px] font-bold">RUJUK / BATAL</span>`;
+                else if(st.includes("Treatment")) statusBadge = `<span class="bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-md text-[10px] font-bold">SELESAI TREATMENT</span>`;
+                else statusBadge = `<span class="bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-md text-[10px] font-bold">AKTIF</span>`;
+
+                tr.innerHTML = `
+                    <td class="px-5 py-4 text-xs text-zinc-500 font-medium whitespace-nowrap">${tgl}</td>
+                    <td class="px-5 py-4 font-mono text-xs font-bold text-primary">${p.RME || '-'}</td>
+                    <td class="px-5 py-4 font-bold text-zinc-800">${p.NAMAPASIEN || 'Tanpa Nama'}</td>
+                    <td class="px-5 py-4 text-xs text-zinc-600 max-w-[150px] truncate" title="${p.JENISLAYANAN}">${p.JENISLAYANAN || '-'}</td>
+                    <td class="px-5 py-4">${statusBadge}</td>
+                    <td class="px-5 py-4 text-center">
+                        <button onclick="editPatientByData('${p.RME}')" class="bg-primary hover:bg-zinc-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm"><i class="fas fa-folder-open mr-1"></i> Buka</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
             });
         }
 
-        async function loadPatients() {
-            if (GAS_URL.includes("TARUH_LINK")) {
-                document.getElementById('patient-table-body').innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Error: Masukkan URL Web App pada skrip HTML.</td></tr>`;
-                return;
-            }
+        function filterPatientTable() {
+            const query = document.getElementById('main-search-input').value.toLowerCase();
+            const filtered = windowAllPatientsData.filter(p => {
+                return (p.NAMAPASIEN && p.NAMAPASIEN.toLowerCase().includes(query)) ||
+                       (p.RME && p.RME.toLowerCase().includes(query)) ||
+                       (p.KELUHAN && p.KELUHAN.toLowerCase().includes(query)) ||
+                       (p.BIDAN_PJ && p.BIDAN_PJ.toLowerCase().includes(query));
+            });
+            renderPatientTable(filtered);
+        }
+
+        async function syncAllData() {
+            if (!GAS_URL.includes("http")) return;
             
-            showLoading("Memuat data pasien...");
+            setLoading(true, "Sinkronisasi Database Cloud...");
             try {
                 const res = await fetch(`${GAS_URL}?action=getAll`);
                 const result = await res.json();
-                const tbody = document.getElementById('patient-table-body');
-                tbody.innerHTML = "";
-
-                if (result.status === "success" && result.data.length > 0) {
-                    result.data.forEach(p => {
-                        let tgl = p.TIMESTAMP ? new Date(p.TIMESTAMP).toLocaleDateString('id-ID') : '-';
-                        let html = `
-                            <tr class="border-b hover:bg-gray-50 transition">
-                                <td class="p-4 whitespace-nowrap">${tgl}</td>
-                                <td class="p-4 font-medium text-primary">${p.RME || '-'}</td>
-                                <td class="p-4 font-semibold text-gray-800">${p.NAMAPASIEN || '-'}</td>
-                                <td class="p-4 text-gray-500 truncate max-w-xs">${p.DIAGNOSA || p.KELUHAN || '-'}</td>
-                                <td class="p-4 text-center">
-                                    <div class="flex justify-center gap-2">
-                                        <button onclick="editPatient('${p.RME}')" class="bg-blue-100 text-blue-600 hover:bg-blue-200 px-3 py-1 rounded" title="Edit Data"><i class="fas fa-edit"></i></button>
-                                        <button onclick="generateDocument('${p.RME}')" class="bg-teal-100 text-teal-600 hover:bg-teal-200 px-3 py-1 rounded" title="Cetak Dokumen/PDF"><i class="fas fa-print"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                        tbody.innerHTML += html;
-                    });
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4">Belum ada data pasien.</td></tr>`;
-                }
-            } catch (e) {
-                document.getElementById('patient-table-body').innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">Gagal terhubung ke server.</td></tr>`;
-            }
-            hideLoading();
-        }
-
-        function filterTable() {
-            let input = document.getElementById("searchInput").value.toLowerCase();
-            let rows = document.getElementById("patient-table-body").getElementsByTagName("tr");
-            for (let i = 0; i < rows.length; i++) {
-                let text = rows[i].innerText.toLowerCase();
-                rows[i].style.display = text.includes(input) ? "" : "none";
-            }
-        }
-
-        async function submitForm(event) {
-            event.preventDefault();
-            if (GAS_URL.includes("TARUH_LINK")) return Swal.fire("Oops", "URL Web App belum diisi", "error");
-
-            showLoading("Menyimpan data...");
-            const form = event.target;
-            const formData = new FormData(form);
-            const dataObj = Object.fromEntries(formData.entries());
-            dataObj.action = 'save';
-
-            try {
-                const res = await fetch(GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(dataObj)
-                });
-                const result = await res.json();
-                hideLoading();
-
-                if (result.status === "success") {
-                    Swal.fire("Berhasil!", result.message, "success").then(() => {
-                        resetForm();
-                        switchTab('data-pasien');
-                    });
-                } else {
-                    Swal.fire("Gagal", result.message, "error");
-                }
-            } catch (e) {
-                hideLoading();
-                Swal.fire("Error", "Gagal menyimpan: " + e.message, "error");
-            }
-        }
-
-        async function editPatient(rme) {
-            showLoading("Mengambil data...");
-            try {
-                const res = await fetch(`${GAS_URL}?rme=${rme}`);
-                const result = await res.json();
-                hideLoading();
-
-                if (result.status === "success") {
-                    resetForm(); 
-                    switchTab('form-pasien');
-                    document.getElementById('form-title').innerText = "Edit Data Rekam Medis";
+                
+                if(result.status === "success") {
+                    windowAllPatientsData = result.data;
+                    renderPatientTable(windowAllPatientsData);
                     
-                    const data = result.data;
-                    for (const key in data) {
-                        if (document.getElementsByName(key).length > 0) {
-                            let val = data[key];
-                            if (val && document.getElementsByName(key)[0].type === "date" && val.includes("T")) {
-                                val = val.split("T")[0];
-                            }
-                            if (val && document.getElementsByName(key)[0].type === "time" && val.includes("T")) {
-                                let d = new Date(val);
-                                val = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
-                            }
-                            document.getElementsByName(key)[0].value = val;
-                        }
+                    let total = windowAllPatientsData.length;
+                    let bersalin = 0, aktif = 0, rujuk = 0;
+                    let l_spa = 0, l_senam = 0, l_usg = 0, l_anc = 0, l_bersalin = 0;
+                    
+                    windowAllPatientsData.forEach(p => {
+                        let st = p.STATUS_PASIEN_AKHIR || "Aktif/Dalam Perawatan";
+                        if(st === 'Selesai Bersalin di Klinik') bersalin++;
+                        else if(st === 'Batal Bersalin / Rujuk Keluar') rujuk++;
+                        else if(st === 'Aktif/Dalam Perawatan') aktif++;
+                        
+                        let lay = p.JENISLAYANAN || "";
+                        if(lay.includes("Massage / Spa")) l_spa++;
+                        if(lay.includes("Senam Hamil")) l_senam++;
+                        if(lay.includes("USG")) l_usg++;
+                        if(lay.includes("Periksa ANC")) l_anc++;
+                        if(lay.includes("Bersalin")) l_bersalin++;
+                    });
+
+                    document.getElementById('dash-total').textContent = total;
+                    document.getElementById('dash-bersalin').textContent = bersalin;
+                    document.getElementById('dash-aktif').textContent = aktif;
+                    document.getElementById('dash-rujuk').textContent = rujuk;
+
+                    if(chartLayanan) {
+                        chartLayanan.data.datasets[0].data = [l_spa, l_senam, l_usg, l_anc, l_bersalin];
+                        chartLayanan.update();
                     }
-                } else {
-                    Swal.fire("Gagal", "Data pasien tidak ditemukan", "error");
+                    if(chartStatus) {
+                        let s_treatment = total - bersalin - aktif - rujuk;
+                        if(s_treatment < 0) s_treatment = 0; 
+                        chartStatus.data.datasets[0].data = [aktif, bersalin, s_treatment, rujuk];
+                        chartStatus.update();
+                    }
                 }
             } catch (e) {
-                hideLoading();
-                Swal.fire("Error", "Gagal mengambil data", "error");
+                showToast("Sinkronisasi Gagal", "Gagal menghubungi database Cloud.", true);
+            }
+            setLoading(false);
+        }
+
+        function editPatientByData(rmeToFind) {
+            closeListModal();
+            const p = windowAllPatientsData.find(x => x.RME === rmeToFind);
+            if(!p) return showToast("Gagal", "Data tidak sinkron", true);
+
+            const form = document.getElementById('emr-form');
+            Object.keys(p).forEach(k => { 
+                if(form.elements[k] && form.elements[k].type !== 'checkbox') {
+                    form.elements[k].value = p[k]; 
+                }
+            });
+
+            if (p['TTL']) {
+                const ttlArr = p['TTL'].split(', ');
+                if(ttlArr.length > 1) {
+                    document.getElementById('tempat_lahir_input').value = ttlArr[0];
+                    const tglArr = ttlArr[1].split('/');
+                    if(tglArr.length === 3) {
+                        document.getElementById('tgl_lahir_input').value = `${tglArr[2]}-${tglArr[1]}-${tglArr[0]}`; 
+                    }
+                } else { document.getElementById('tempat_lahir_input').value = p['TTL']; }
+            }
+
+            if (p['JENISLAYANAN']) {
+                const layanans = p['JENISLAYANAN'].split(', ');
+                document.querySelectorAll('input[name="JENISLAYANAN"]').forEach(cb => { cb.checked = layanans.includes(cb.value); });
+            }
+
+            if (p['GPA']) {
+                const gpa = p['GPA'].match(/\d+/g);
+                if(gpa && gpa.length >= 3) {
+                    form.elements['GPA_G'].value = gpa[0];
+                    form.elements['GPA_P'].value = gpa[1];
+                    form.elements['GPA_A'].value = gpa[2];
+                }
+            }
+
+            if(p['STATUS_PASIEN_AKHIR']) { document.querySelector('select[name="STATUS_PASIEN_AKHIR"]').value = p['STATUS_PASIEN_AKHIR']; }
+            toggleAlasanBatal();
+            
+            setEditMode(true, p.RME);
+            showToast("Pasien Aktif", `Sedang membuka rekam medis: ${p.NAMAPASIEN}`);
+            goToStep(3); 
+        }
+
+        function toggleAlasanBatal() {
+            const status = document.querySelector('select[name="STATUS_PASIEN_AKHIR"]').value;
+            const formBatal = document.getElementById('form-alasan-batal');
+            if(status === 'Batal Bersalin / Rujuk Keluar') {
+                formBatal.classList.remove('hidden');
+            } else {
+                formBatal.classList.add('hidden');
             }
         }
 
-        async function generateDocument(rme) {
-            showLoading("Membuat Dokumen PDF... (Harap tunggu, butuh ~10 detik)");
+        function tambahCatatan() {
+            const input = document.getElementById('input-catatan-baru');
+            const teks = input.value.trim();
+            if(!teks) return;
+
+            const textarea = document.getElementById('riwayat-text');
+            const date = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'});
+            
+            const newLine = `[${date}] - ${teks}\n`;
+            textarea.value = newLine + textarea.value; 
+            input.value = "";
+        }
+
+        function catatGantiBidan(stepNum) {
+            const inputBidan = document.getElementById(`bidan-pengganti-${stepNum}`);
+            const inputAlasan = document.getElementById(`alasan-ganti-${stepNum}`);
+            const bidan = inputBidan.value.trim();
+            const alasan = inputAlasan.value.trim();
+
+            if(!bidan || !alasan) {
+                showToast("Peringatan", "Nama Bidan Pengganti dan Alasan wajib diisi!", true);
+                return;
+            }
+
+            const date = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+            
+            const logBidan = document.getElementById('riwayat-ganti-bidan-log');
+            logBidan.value = `[${date}] Bidan Baru: ${bidan} | Ket: ${alasan}\n` + logBidan.value;
+
+            const logUtama = document.getElementById('riwayat-text');
+            logUtama.value = `[${date}] - Pergantian Bidan PIC ke ${bidan} (${alasan})\n` + logUtama.value;
+
+            inputBidan.value = ""; inputAlasan.value = "";
+            document.getElementById(`toggle-ganti-bidan-${stepNum}`).checked = false;
+            document.getElementById(`ganti-bidan-form-${stepNum}`).classList.add('hidden');
+
+            showToast("Log Tersimpan", "Pergantian direkam ke Histori Pasien.");
+        }
+
+        function initCharts() {
+            const ctxLayanan = document.getElementById('layananChart');
+            if(ctxLayanan) {
+                chartLayanan = new Chart(ctxLayanan, {
+                    type: 'bar',
+                    data: { labels: ['Spa', 'Senam', 'USG', 'ANC', 'Bersalin'], datasets: [{ label: 'Total Layanan', data: [0,0,0,0,0], backgroundColor: '#18181b', borderRadius: 6 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false} } }
+                });
+            }
+            const ctxStatus = document.getElementById('statusChart');
+            if(ctxStatus) {
+                chartStatus = new Chart(ctxStatus, {
+                    type: 'doughnut',
+                    data: { labels: ['Aktif', 'Selesai Bersalin', 'Selesai Treatment', 'Batal/Rujuk'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#a1a1aa', '#18181b', '#d4d4d8', '#f43f5e'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, cutout: '75%' } }
+                });
+            }
+        }
+
+        function init() {
+            renderSidebar();
+            updateStepView();
+            setTimestamp();
+            initCharts();
+            
+            if(!document.getElementById('RME').value) autoGenerateRME();
+            toggleAlasanBatal();
+            
+            if(GAS_URL.includes("http")) {
+                syncAllData(); 
+            }
+        }
+
+        function setEditMode(state, rme) {
+            isEditMode = state;
+            const badge = document.getElementById('mode-badge');
+            const btnSave = document.getElementById('btn-save-sidebar');
+
+            if(state) {
+                badge.className = "mt-4 w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-zinc-900 text-white rounded-lg text-xs font-bold border border-zinc-800 transition-colors";
+                badge.innerHTML = `<i class="fas fa-edit"></i> Edit Pasien: ${rme}`;
+                btnSave.innerHTML = `<i class="fas fa-save"></i> Perbarui Data ke Cloud`;
+            } else {
+                badge.className = "mt-4 w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-lg text-xs font-bold border border-zinc-200 transition-colors";
+                badge.innerHTML = `<i class="fas fa-shield-alt"></i> Mode Pendaftaran`;
+                btnSave.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Simpan ke Cloud`;
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('emr-form').reset();
+            setEditMode(false);
+            autoGenerateRME();
+            setTimestamp();
+            toggleAlasanBatal();
+            
+            document.getElementById('toggle-ganti-bidan-6').checked = false;
+            document.getElementById('ganti-bidan-form-6').classList.add('hidden');
+            document.getElementById('toggle-ganti-bidan-7').checked = false;
+            document.getElementById('ganti-bidan-form-7').classList.add('hidden');
+
+            document.getElementById('tempat_lahir_input').value = '';
+            document.getElementById('tgl_lahir_input').value = '';
+            goToStep(3);
+            showToast("Form Siap", "Silakan daftar pasien baru.");
+        }
+
+        function autoGenerateRME() {
+            if(isEditMode) return;
+            const date = new Date();
+            const yymmdd = date.getFullYear().toString().slice(2) + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0');
+            const random = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('RME').value = `KNP-${yymmdd}-${random}`;
+        }
+
+        function renderSidebar() {
+            const nav = document.getElementById('nav-steps');
+            nav.innerHTML = '';
+            steps.forEach(s => {
+                const act = s.id === currentStep;
+                const isSystem = s.type === 'system';
+                let baseStyle = act ? 'bg-primary text-white shadow-md' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900';
+                
+                nav.innerHTML += `<div onclick="goToStep(${s.id})" class="p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all font-medium ${baseStyle}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center ${act ? 'bg-white/20' : 'bg-zinc-200 text-zinc-500'}"><i class="fas ${s.icon}"></i></div>
+                    <div class="text-sm">${s.title}</div></div>`;
+            });
+        }
+        
+        function updateStepView() {
+            document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${currentStep}`).classList.add('active');
+            
+            const currentTitle = steps.find(x => x.id === currentStep).title;
+            document.getElementById('header-title').textContent = currentTitle;
+            
+            document.getElementById('btn-prev').style.display = currentStep === 1 ? 'none' : 'block';
+            document.getElementById('btn-next').style.display = currentStep === steps.length ? 'none' : 'block';
+            
+            const fw = document.getElementById('form-wrapper');
+            if(currentStep <= 2) {
+                fw.classList.remove('bg-white', 'border', 'shadow-sm', 'p-6', 'md:p-8');
+            } else {
+                fw.classList.add('bg-white', 'border', 'shadow-sm', 'p-6', 'md:p-8');
+            }
+
+            renderSidebar();
+            document.getElementById('main-scroll').scrollTop = 0;
+            
+            if(currentStep === 1 && chartLayanan) { chartLayanan.resize(); chartStatus.resize(); }
+        }
+        
+        function nextStep() { if (currentStep < steps.length) { currentStep++; updateStepView(); } }
+        function prevStep() { if (currentStep > 1) { currentStep--; updateStepView(); } }
+        function goToStep(id) { currentStep = id; updateStepView(); }
+        function setTimestamp() { document.getElementById('TIMESTAMP').value = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + " WIB"; }
+        
+        function showToast(title, msg, isError = false) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-msg').textContent = msg;
+            
+            const icon = document.getElementById('toast-icon');
+            if(isError) {
+                icon.className = 'fas fa-exclamation-circle text-rose-500 text-2xl';
+                t.className = "fixed top-5 right-5 bg-white text-zinc-800 px-6 py-4 rounded-2xl shadow-2xl transform opacity-100 transition-all duration-400 z-[60] flex items-center gap-4 border-l-4 border-l-rose-500 border border-zinc-200";
+            } else {
+                icon.className = 'fas fa-check-circle text-emerald-500 text-2xl';
+                t.className = "fixed top-5 right-5 bg-white text-zinc-800 px-6 py-4 rounded-2xl shadow-2xl transform opacity-100 transition-all duration-400 z-[60] flex items-center gap-4 border-l-4 border-l-emerald-500 border border-zinc-200";
+            }
+
+            setTimeout(() => { t.classList.add('-translate-y-24', 'opacity-0'); t.classList.remove('opacity-100'); }, 4000);
+        }
+
+        function getFormData() {
+            const form = document.getElementById('emr-form');
+            const data = {};
+            for (let [k, v] of new FormData(form).entries()) {
+                if(k !== "JENISLAYANAN") data[k] = v;
+            }
+            
+            const layanans = [];
+            document.querySelectorAll('input[name="JENISLAYANAN"]:checked').forEach(cb => layanans.push(cb.value));
+            data['JENISLAYANAN'] = layanans.join(", ");
+            
+            const tempatLahir = document.getElementById('tempat_lahir_input').value;
+            const tglLahir = document.getElementById('tgl_lahir_input').value;
+            let formattedTgl = tglLahir;
+            if(tglLahir) {
+                const parts = tglLahir.split('-');
+                formattedTgl = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+            }
+            data['TTL'] = `${tempatLahir}, ${formattedTgl}`;
+            data['GPA'] = `G${data['GPA_G']||'-'} P${data['GPA_P']||'-'} A${data['GPA_A']||'-'}`;
+            return data;
+        }
+
+        async function saveToDatabase() {
+            const data = getFormData();
+            if (!data.RME) return showToast("Gagal", "Sistem gagal membuat RME", true);
+
+            if (GAS_URL.includes("http")) {
+                setLoading(true, "Menyimpan ke Cloud...");
+                try {
+                    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
+                    const result = await res.json();
+                    
+                    showToast("Sukses", result.message);
+                    if(!isEditMode) setEditMode(true, data.RME);
+                    
+                    await syncAllData(); 
+                } catch (e) { 
+                    setLoading(false);
+                    showToast("Gagal Menyimpan", "Cek koneksi internet Anda.", true); 
+                }
+            } else {
+                showToast("Simulasi Lokal", "Tersimpan di Lokal (URL GAS belum dipasang)");
+                setEditMode(true, data.RME);
+            }
+        }
+
+        async function generateSlideDocument() {
+            const rme = document.getElementById('RME').value;
+            if(!rme || !isEditMode) return showToast("Peringatan", "Simpan data pasien terlebih dahulu ke Cloud.", true);
+            if (!GAS_URL.includes("http")) return showToast("Demo", "Fitur ini membutuhkan URL backend AppScript.", true);
+
+            setLoading(true, "Menyusun Dokumen PDF...");
             try {
                 const res = await fetch(`${GAS_URL}?action=generateSlide&rme=${rme}`);
+                
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") === -1) {
+                    throw new Error("Server tidak mengembalikan JSON. Pastikan Apps Script di Deploy sebagai Web App -> Anyone.");
+                }
+
                 const result = await res.json();
-                hideLoading();
+                setLoading(false);
 
                 if (result.status === "success") {
-                    switchTab('form-pasien');
-                    const resultDiv = document.getElementById('slide-result');
-                    resultDiv.classList.remove('hidden');
-                    resultDiv.classList.add('flex');
+                    showToast("Berhasil!", "Silakan klik tombol Unduh PDF.");
+                    const rDiv = document.getElementById('slide-result');
+                    rDiv.classList.remove('hidden'); rDiv.classList.add('flex');
                     document.getElementById('link-pdf').href = result.pdfUrl;
                     document.getElementById('link-slide').href = result.slideUrl;
-                    Swal.fire("Sukses", "Dokumen berhasil digenerate!", "success");
-                } else {
-                    // Peringatan error sekarang menampilkan pesan asli dari Google Apps Script
-                    Swal.fire("Gagal", result.message || "Gagal membuat dokumen", "error");
+                } else { 
+                    showToast("Gagal", result.message, true); 
                 }
-            } catch (e) {
-                hideLoading();
-                Swal.fire("Error Koneksi", "Gagal menghubungi server: " + e.message, "error");
+            } catch(e) {
+                setLoading(false);
+                showToast("CORS Error", e.message || "Gagal menghubungi server.", true);
             }
         }
 
-        window.onload = () => {
-            generateNewRME();
-            loadDashboard();
-        };
+        window.onload = init;
     </script>
 </body>
 </html>
