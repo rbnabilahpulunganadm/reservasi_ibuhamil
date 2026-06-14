@@ -139,7 +139,6 @@
         <div class="flex-1 overflow-y-auto p-3 lg:p-6 pb-24" id="main-scroll">
             <div class="max-w-6xl mx-auto print-container">
 
-                <!-- GLOBAL FILTER BAR -->
                 <div id="global-filter-bar" class="mb-4 bg-white p-4 lg:p-5 rounded-2xl border border-zinc-200 shadow-sm flex flex-col lg:flex-row items-center gap-4 justify-between transition-all no-print">
                     <div class="flex items-center gap-2 text-sm font-bold text-zinc-800 w-full lg:w-auto">
                         <div class="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-500"><i class="fas fa-filter"></i></div>
@@ -173,10 +172,8 @@
                 </div>
 
                 <form id="emr-form" onsubmit="return false;">
-                    
                     <input type="hidden" id="VISIT_ID" name="VISIT_ID">
                     
-                    <!-- STEP 1: DASHBOARD -->
                     <div id="step-1" class="step-content active">
                          <div class="mb-5 lg:mb-6 px-1">
                              <h3 class="text-xl lg:text-2xl font-bold text-zinc-900 tracking-tight">Executive Dashboard</h3>
@@ -235,7 +232,6 @@
                          </div>
                     </div>
 
-                    <!-- STEP 2: DATABASE -->
                     <div id="step-2" class="step-content">
                         <div class="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden flex flex-col h-[75vh] lg:h-auto lg:min-h-[500px]">
                             
@@ -284,7 +280,6 @@
 
                     <div id="form-wrapper" class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-4 lg:p-8 mt-2 hidden-on-dash">
                         
-                        <!-- STEP 3 -->
                         <div id="step-3" class="step-content">
                             <div class="mb-5 lg:mb-6 flex flex-col sm:flex-row justify-between sm:items-end border-b border-zinc-100 pb-4 no-print gap-3">
                                 <div>
@@ -391,7 +386,6 @@
                             </div>
                         </div>
 
-                        <!-- STEP 4 -->
                         <div id="step-4" class="step-content">
                             <h3 class="text-lg lg:text-xl font-bold text-zinc-900 tracking-tight mb-5 border-b border-zinc-100 pb-3">Anamnesa & Riwayat Medis</h3>
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 print-grid">
@@ -416,7 +410,6 @@
                             </div>
                         </div>
                         
-                        <!-- STEP 5 -->
                         <div id="step-5" class="step-content">
                             <h3 class="text-lg lg:text-xl font-bold text-zinc-900 tracking-tight mb-5 border-b border-zinc-100 pb-3">Pemeriksaan Tanda Vital Sesi Ini</h3>
                             <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 mb-6 print-grid">
@@ -433,7 +426,6 @@
                             </div>
                         </div>
 
-                        <!-- STEP 6 -->
                         <div id="step-6" class="step-content">
                             <h3 class="text-lg lg:text-xl font-bold text-zinc-900 tracking-tight mb-5 border-b border-zinc-100 pb-3">Pemeriksaan Fisik Terarah Sesi Ini</h3>
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 print-grid">
@@ -478,7 +470,6 @@
                             </div>
                         </div>
 
-                        <!-- STEP 7 -->
                         <div id="step-7" class="step-content">
                             <h3 class="text-lg lg:text-xl font-bold text-zinc-900 tracking-tight mb-5 border-b border-zinc-100 pb-3">Dokumentasi Partus / Kelahiran (Bila Ada)</h3>
                             
@@ -521,7 +512,6 @@
                             </div>
                         </div>
 
-                        <!-- STEP 8 -->
                         <div id="step-8" class="step-content">
                             <div class="mb-5 lg:mb-6 border-b border-zinc-100 pb-3 lg:pb-4 flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                                 <div>
@@ -587,7 +577,6 @@
                             </div>
                         </div>
 
-                        <!-- STEP 9 -->
                         <div id="step-9" class="step-content no-print">
                             <h3 class="text-xl lg:text-2xl font-bold text-zinc-900 tracking-tight mb-2 text-center mt-4">Ekspor Dokumen Medis</h3>
                             <p class="text-zinc-500 mb-10 max-w-md mx-auto text-center text-xs lg:text-sm px-4">Sistem akan otomatis memilihkan <strong class="text-zinc-800">Template Bersalin atau Template Standar</strong> berdasarkan layanan pasien.</p>
@@ -1092,7 +1081,7 @@
             if(!confirm(`Buka kunjungan baru hari ini untuk pasien ${baseData.NAMAPASIEN}? Identitas aman, kolom medis dikosongkan.`)) return;
 
             const fieldsToClear = [
-                'VISIT_ID', 'JENISLAYANAN', 'KELUHAN', 'DIAGNOSA', 'TDPASIEN', 'NPASIEN', 'PPASIEN', 
+                'JENISLAYANAN', 'KELUHAN', 'DIAGNOSA', 'TDPASIEN', 'NPASIEN', 'PPASIEN', 
                 'SPASIEN', 'TBPASIEN', 'BBSEBELUMHAMILPASIEN', 'BBSETELAHHAMILPASIEN', 'IMTPASIEN', 'lila', 
                 'PERIKSAFISIKPASIEN', 'PERIKSAKONJUNGTIVAPASIEN', 'PERIKSASKELERAPASIEN', 'PERIKSALEHERPASIEN', 
                 'PERIKSAPAYUDARAPASIEN', 'INDIKASI', 'PERIKSAABDOMENPASIEN', 'TFU', 'PRESENTASI', 'DJJ', 
@@ -1105,6 +1094,9 @@
                 if(form.elements[id] && form.elements[id].type !== 'checkbox') form.elements[id].value = '';
             });
             document.querySelectorAll('input[name="JENISLAYANAN"]').forEach(cb => cb.checked = false);
+            
+            // PERBAIKAN FATAL BUG: Generate ulang ID Kunjungan segera!
+            document.getElementById('VISIT_ID').value = "V-" + new Date().getTime() + "-" + Math.floor(Math.random()*1000);
             
             setTimestamp(); 
             setEditMode(true, rme);
@@ -1125,7 +1117,8 @@
             const teks = input.value.trim();
             if(!teks) return;
             const textarea = document.getElementById('riwayat-text');
-            const date = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'});
+            const d = new Date();
+            const date = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
             textarea.value = `[${date}] - ${teks}\n` + textarea.value; 
             input.value = "";
         }
@@ -1137,7 +1130,9 @@
             const alasan = inputAlasan.value.trim();
             if(!bidan || !alasan) return showToast("Peringatan", "Nama & Alasan wajib diisi!", true);
 
-            const date = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+            const d = new Date();
+            const date = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            
             const logBidan = document.getElementById('riwayat-ganti-bidan-log');
             logBidan.value = `[${date}] Bidan Baru: ${bidan} | Ket: ${alasan}\n` + logBidan.value;
             const logUtama = document.getElementById('riwayat-text');
@@ -1200,7 +1195,8 @@
             const yymmdd = date.getFullYear().toString().slice(2) + String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate()).padStart(2, '0');
             const random = Math.floor(1000 + Math.random() * 9000);
             document.getElementById('RME').value = `KNP-${yymmdd}-${random}`;
-            document.getElementById('VISIT_ID').value = ""; 
+            // PERBAIKAN FATAL BUG: Generate ID Kunjungan sejak awal!
+            document.getElementById('VISIT_ID').value = "V-" + new Date().getTime() + "-" + Math.floor(Math.random()*1000); 
         }
 
         function renderSidebar() {
@@ -1243,7 +1239,12 @@
             if(window.innerWidth < 1024 && isSidebarOpen) toggleSidebar();
         }
         
-        function setTimestamp() { document.getElementById('TIMESTAMP').value = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + " WIB"; }
+        function setTimestamp() { 
+            const d = new Date();
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            const str = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} WIB`;
+            document.getElementById('TIMESTAMP').value = str;
+        }
         
         function showToast(title, msg, isError = false) {
             const t = document.getElementById('toast');
@@ -1261,6 +1262,28 @@
             setTimeout(() => { t.classList.add('-translate-y-32', 'opacity-0'); t.classList.remove('opacity-100'); }, 4000);
         }
 
+        function getFormData() {
+            const form = document.getElementById('emr-form');
+            const data = {};
+            for (let [k, v] of new FormData(form).entries()) {
+                if(k !== "JENISLAYANAN") data[k] = v;
+            }
+            const layanans = [];
+            document.querySelectorAll('input[name="JENISLAYANAN"]:checked').forEach(cb => layanans.push(cb.value));
+            data['JENISLAYANAN'] = layanans.join(", ");
+            
+            const tempatLahir = document.getElementById('tempat_lahir_input').value;
+            const tglLahir = document.getElementById('tgl_lahir_input').value;
+            let formattedTgl = tglLahir;
+            if(tglLahir) {
+                const parts = tglLahir.split('-');
+                formattedTgl = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+            }
+            data['TTL'] = `${tempatLahir}, ${formattedTgl}`;
+            data['GPA'] = `G${data['GPA_G']||'-'} P${data['GPA_P']||'-'} A${data['GPA_A']||'-'}`;
+            return data;
+        }
+
         async function saveToDatabase() {
             const data = getFormData();
             if (!data.RME) return showToast("Gagal", "RME tidak boleh kosong", true);
@@ -1269,16 +1292,26 @@
             if (GAS_URL.includes("http")) {
                 setLoading(true, "Menyimpan Riwayat...");
                 try {
-                    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
+                    const res = await fetch(GAS_URL, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Perbaikan request
+                        body: JSON.stringify(data) 
+                    });
                     const result = await res.json();
-                    showToast("Sukses", result.message);
                     
-                    if(!isEditMode) setEditMode(true, data.RME);
-                    await syncAllData(); 
-                    if(data.RME) editPatientByData(data.RME);
+                    // PERBAIKAN FATAL BUG: Notifikasi palsu dihentikan!
+                    if (result.status === "success") {
+                        showToast("Sukses", result.message);
+                        if(!isEditMode) setEditMode(true, data.RME);
+                        await syncAllData(); 
+                        if(data.RME) editPatientByData(data.RME, data.VISIT_ID);
+                    } else {
+                        setLoading(false);
+                        showToast("Gagal Disimpan", result.message, true);
+                    }
                 } catch (e) { 
                     setLoading(false);
-                    showToast("Gagal Menyimpan", "Cek koneksi internet Anda.", true); 
+                    showToast("Gagal Menyimpan", "Cek koneksi internet Anda atau hubungi teknisi.", true); 
                 }
             } else {
                 showToast("Simulasi Lokal", "Tersimpan di Lokal (URL GAS belum dipasang)");
