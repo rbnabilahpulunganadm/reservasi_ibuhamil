@@ -53,8 +53,6 @@
         input::placeholder, textarea::placeholder { color: #a1a1aa; font-size: 0.85rem; }
         
         .timeline-line::before { content: ''; position: absolute; left: 15px; top: 10px; bottom: 0; width: 2px; background-color: #e4e4e7; z-index: 0; }
-        
-        /* Sticky Table Column */
         .sticky-col { position: sticky; right: 0; z-index: 10; box-shadow: -4px 0 6px -1px rgba(0,0,0,0.05); }
     </style>
 </head>
@@ -141,7 +139,7 @@
         <div class="flex-1 overflow-y-auto p-3 lg:p-6 pb-24" id="main-scroll">
             <div class="max-w-6xl mx-auto print-container">
 
-                <!-- GLOBAL FILTER BAR (Menempel di Atas Dashboard & Database) -->
+                <!-- GLOBAL FILTER BAR -->
                 <div id="global-filter-bar" class="mb-4 bg-white p-4 lg:p-5 rounded-2xl border border-zinc-200 shadow-sm flex flex-col lg:flex-row items-center gap-4 justify-between transition-all no-print">
                     <div class="flex items-center gap-2 text-sm font-bold text-zinc-800 w-full lg:w-auto">
                         <div class="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-500"><i class="fas fa-filter"></i></div>
@@ -224,7 +222,7 @@
                             <div class="bg-white border border-zinc-200 p-4 lg:p-6 rounded-2xl shadow-sm">
                                 <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-2">
                                     <h4 class="font-bold text-zinc-800 text-xs lg:text-sm"><i class="fas fa-chart-bar mr-2 text-zinc-400"></i>Sebaran Layanan Klinik</h4>
-                                    <span class="text-[9px] bg-zinc-100 text-zinc-500 px-2 py-1 rounded font-bold uppercase tracking-wider">Total Semua Kedatangan</span>
+                                    <span class="text-[9px] bg-zinc-100 text-zinc-500 px-2 py-1 rounded font-bold uppercase tracking-wider">Semua Kedatangan</span>
                                 </div>
                                 <div class="chart-container"><canvas id="layananChart"></canvas></div>
                             </div>
@@ -259,7 +257,7 @@
 
                             <div class="overflow-x-auto overflow-y-auto flex-1 w-full relative">
                                 <table class="w-full text-sm text-left min-w-[1400px]">
-                                    <thead class="text-[10px] lg:text-[11px] text-zinc-500 uppercase bg-zinc-100/80 border-b border-zinc-200 sticky top-0 z-20">
+                                    <thead class="text-[10px] lg:text-[11px] text-zinc-500 uppercase bg-zinc-100/80 border-b border-zinc-200 sticky top-0 z-20 backdrop-blur-md">
                                         <tr>
                                             <th class="px-4 py-3.5 font-bold">Tgl. Daftar</th>
                                             <th class="px-4 py-3.5 font-bold">No. RME</th>
@@ -273,7 +271,7 @@
                                             <th class="px-4 py-3.5 font-bold">Bidan/Terapis</th>
                                             <th class="px-4 py-3.5 font-bold">Layanan</th>
                                             <th class="px-4 py-3.5 font-bold">Status Akhir</th>
-                                            <th class="px-4 py-3.5 font-bold text-center sticky-col bg-zinc-100/90 backdrop-blur-sm">Tindakan</th>
+                                            <th class="px-4 py-3.5 font-bold text-center sticky-col bg-zinc-100/90 backdrop-blur-md">Tindakan</th>
                                         </tr>
                                     </thead>
                                     <tbody id="database-table-body" class="divide-y divide-zinc-100 text-zinc-700 bg-white">
@@ -286,6 +284,7 @@
 
                     <div id="form-wrapper" class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-4 lg:p-8 mt-2 hidden-on-dash">
                         
+                        <!-- STEP 3 -->
                         <div id="step-3" class="step-content">
                             <div class="mb-5 lg:mb-6 flex flex-col sm:flex-row justify-between sm:items-end border-b border-zinc-100 pb-4 no-print gap-3">
                                 <div>
@@ -392,6 +391,7 @@
                             </div>
                         </div>
 
+                        <!-- STEP 4 -->
                         <div id="step-4" class="step-content">
                             <h3 class="text-lg lg:text-xl font-bold text-zinc-900 tracking-tight mb-5 border-b border-zinc-100 pb-3">Anamnesa & Riwayat Medis</h3>
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 print-grid">
@@ -416,6 +416,7 @@
                             </div>
                         </div>
                         
+                        <!-- STEP 5 -->
                         <div id="step-5" class="step-content">
                             <h3 class="text-lg lg:text-xl font-bold text-zinc-900 tracking-tight mb-5 border-b border-zinc-100 pb-3">Pemeriksaan Tanda Vital Sesi Ini</h3>
                             <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 mb-6 print-grid">
@@ -428,10 +429,11 @@
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div class="bg-zinc-50 p-4 lg:p-5 rounded-2xl border border-zinc-200"><label class="block text-xs font-bold text-zinc-600 mb-2">Berat Badan Sebelum Hamil (Kg)</label><input type="number" step="0.1" name="BBSEBELUMHAMILPASIEN" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-base font-bold text-zinc-900" placeholder="Contoh: 55"></div>
-                                <div class="bg-zinc-50 p-4 lg:p-5 rounded-2xl border border-zinc-200"><label class="block text-xs font-bold text-zinc-600 mb-2">Berat Badan Hari Ini (Kg)</label><input type="number" step="0.1" name="BBSETELAHHAMILPASIEN" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-base font-bold text-zinc-900" placeholder="Contoh: 62"></div>
+                                <div class="bg-zinc-50 p-4 lg:p-5 rounded-2xl border border-zinc-200"><label class="block text-xs font-bold text-zinc-600 mb-2">Berat Badan Saat Ini (Kg)</label><input type="number" step="0.1" name="BBSETELAHHAMILPASIEN" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-base font-bold text-zinc-900" placeholder="Contoh: 62"></div>
                             </div>
                         </div>
 
+                        <!-- STEP 6 -->
                         <div id="step-6" class="step-content">
                             <h3 class="text-lg lg:text-xl font-bold text-zinc-900 tracking-tight mb-5 border-b border-zinc-100 pb-3">Pemeriksaan Fisik Terarah Sesi Ini</h3>
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 print-grid">
@@ -458,10 +460,25 @@
                                     
                                     <div><label class="block text-xs font-bold text-zinc-500 mb-1">Bidan Pemeriksa / Terapis Sesi Ini</label><input type="text" name="TERAPIS" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-sm font-bold text-zinc-800" placeholder="Contoh: Bdn. Aisyah"></div>
                                     <div><label class="block text-xs font-bold text-zinc-500 mb-1">Catatan Ekstra / Instruksi Dokter</label><textarea name="CATATAN" rows="2" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-sm" placeholder="Contoh: Perbanyak minum air, bed rest..."></textarea></div>
+                                    
+                                    <div class="mt-4 bg-white p-4 lg:p-5 rounded-2xl border border-zinc-200">
+                                        <label class="flex items-center cursor-pointer mb-2 group">
+                                            <input type="checkbox" id="toggle-ganti-bidan-6" class="w-5 h-5 lg:w-4 lg:h-4 text-primary border-zinc-300 rounded">
+                                            <span class="ml-3 lg:ml-2 text-xs font-bold text-zinc-700">Ada pergantian bidan sesi ini?</span>
+                                        </label>
+                                        <div id="ganti-bidan-form-6" class="hidden space-y-3 mt-4 pt-4 border-t border-zinc-200">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div><label class="block text-[10px] font-bold text-zinc-500 mb-1">NAMA PENGGANTI</label><input type="text" id="bidan-pengganti-6" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Bidan pengganti"></div>
+                                                <div><label class="block text-[10px] font-bold text-zinc-500 mb-1">ALASAN</label><input type="text" id="alasan-ganti-6" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Cth: Ganti Shift"></div>
+                                            </div>
+                                            <button type="button" onclick="catatGantiBidan(6)" class="w-full bg-zinc-800 hover:bg-zinc-900 text-white px-4 py-3 lg:py-2.5 rounded-xl text-sm font-bold transition shadow-md"><i class="fas fa-save mr-1"></i> Simpan Pergantian</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- STEP 7 -->
                         <div id="step-7" class="step-content">
                             <h3 class="text-lg lg:text-xl font-bold text-zinc-900 tracking-tight mb-5 border-b border-zinc-100 pb-3">Dokumentasi Partus / Kelahiran (Bila Ada)</h3>
                             
@@ -470,6 +487,20 @@
                                     <div class="grid grid-cols-2 gap-3 lg:gap-4">
                                         <div><label class="block text-xs font-bold text-zinc-500 mb-1">Tanggal Lahir Bayi</label><input type="date" name="TANGGALLAHIR" class="w-full border border-zinc-300 rounded-xl px-3 py-3 lg:px-4 text-sm"></div>
                                         <div><label class="block text-xs font-bold text-zinc-500 mb-1">Jam Lahir</label><input type="time" name="JAMLAHIR" class="w-full border border-zinc-300 rounded-xl px-3 py-3 lg:px-4 text-sm"></div>
+                                    </div>
+                                    
+                                    <div class="bg-zinc-50 p-4 lg:p-5 rounded-2xl border border-zinc-200">
+                                        <label class="flex items-center cursor-pointer mb-2 group">
+                                            <input type="checkbox" id="toggle-ganti-bidan-7" class="w-5 h-5 lg:w-4 lg:h-4 text-primary border-zinc-300 rounded">
+                                            <span class="ml-3 lg:ml-2 text-xs font-bold text-zinc-700">Ada pergantian bidan penolong persalinan?</span>
+                                        </label>
+                                        <div id="ganti-bidan-form-7" class="hidden space-y-3 mt-4 pt-4 border-t border-zinc-200">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div><label class="block text-[10px] font-bold text-zinc-500 mb-1">NAMA PENGGANTI</label><input type="text" id="bidan-pengganti-7" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Bidan penolong"></div>
+                                                <div><label class="block text-[10px] font-bold text-zinc-500 mb-1">ALASAN</label><input type="text" id="alasan-ganti-7" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Cth: Cito / Darurat"></div>
+                                            </div>
+                                            <button type="button" onclick="catatGantiBidan(7)" class="w-full bg-zinc-800 hover:bg-zinc-900 text-white px-4 py-3 lg:py-2.5 rounded-xl text-sm font-bold transition shadow-md"><i class="fas fa-save mr-1"></i> Simpan Pergantian</button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -490,6 +521,7 @@
                             </div>
                         </div>
 
+                        <!-- STEP 8 -->
                         <div id="step-8" class="step-content">
                             <div class="mb-5 lg:mb-6 border-b border-zinc-100 pb-3 lg:pb-4 flex flex-col sm:flex-row justify-between sm:items-end gap-4">
                                 <div>
@@ -512,7 +544,6 @@
                                 </div>
 
                                 <div class="lg:col-span-2 space-y-5">
-                                    
                                     <div class="bg-zinc-50 border border-zinc-200 p-5 rounded-2xl shadow-sm">
                                         <label class="block text-[10px] font-bold text-zinc-800 mb-2 uppercase tracking-wider">Status Perjalanan Akhir Pasien</label>
                                         <select name="STATUS_PASIEN_AKHIR" class="w-full border border-zinc-300 rounded-xl px-3 py-3 text-sm bg-white font-bold text-zinc-900 shadow-sm" onchange="toggleAlasanBatal()">
@@ -529,28 +560,44 @@
                                         <textarea name="ALASAN_BATAL_BERSALIN" rows="3" class="w-full border border-zinc-300 rounded-xl px-4 py-3 text-sm bg-zinc-50" placeholder="Jelaskan detail RS rujukan..."></textarea>
                                     </div>
 
-                                    <div class="border border-zinc-200 rounded-2xl overflow-hidden bg-white flex flex-col flex-1 shadow-sm h-[300px]">
-                                        <div class="bg-zinc-100 px-4 py-3 border-b border-zinc-200 flex justify-between items-center text-zinc-800">
-                                            <h4 class="font-bold text-[10px] uppercase tracking-wide"><i class="fas fa-edit mr-2 text-zinc-400"></i>Catatan Log Manual (Khusus kunjungan ini)</h4>
+                                    <div class="border border-zinc-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                        <div class="bg-zinc-100 px-4 py-3 border-b border-zinc-200">
+                                            <h4 class="font-bold text-zinc-700 text-[10px] uppercase tracking-wider"><i class="fas fa-user-md mr-1.5 text-zinc-400"></i>Log Pergantian Bidan</h4>
                                         </div>
-                                        <div class="p-4 flex-1 bg-zinc-50/30 overflow-hidden relative">
-                                            <textarea id="riwayat-text" name="RIWAYAT_KUNJUNGAN" class="absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)] border-none focus:ring-0 text-xs lg:text-sm text-zinc-700 bg-transparent resize-none leading-loose font-medium" placeholder="[Catatan harian kunjungan...]"></textarea>
+                                        <div class="p-3 bg-zinc-50/50">
+                                            <textarea id="riwayat-ganti-bidan-log" name="RIWAYAT_GANTI_BIDAN" rows="4" class="w-full border-none focus:ring-0 text-[11px] text-zinc-600 bg-transparent resize-none leading-relaxed" readonly placeholder="Otomatis terisi jika ada input ganti bidan di tahap sebelumnya..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="border border-zinc-200 rounded-2xl overflow-hidden bg-white flex flex-col flex-1 shadow-sm h-[300px]">
+                                        <div class="bg-primary px-5 py-4 border-b border-zinc-800 flex justify-between items-center text-white">
+                                            <h4 class="font-bold text-sm tracking-wide"><i class="fas fa-history mr-2 text-zinc-400"></i>Buku Log Tindakan / Kunjungan</h4>
+                                        </div>
+                                        <div class="p-5 flex-1 bg-zinc-50/30 overflow-hidden relative">
+                                            <textarea id="riwayat-text" name="RIWAYAT_KUNJUNGAN" class="absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)] border-none focus:ring-0 text-xs lg:text-sm text-zinc-700 bg-transparent resize-none leading-loose font-medium" placeholder="[DD/MM/YYYY] - Belum ada riwayat kunjungan. Tambahkan di bawah..."></textarea>
+                                        </div>
+                                        <div class="bg-zinc-100 p-4 border-t border-zinc-200 flex flex-col sm:flex-row gap-3">
+                                            <input type="text" id="input-catatan-baru" class="flex-1 border border-zinc-300 rounded-xl px-4 py-2.5 text-sm font-medium" placeholder="Ketik tindakan hari ini (Cth: ANC, USG baik)...">
+                                            <button type="button" onclick="tambahCatatan()" class="bg-zinc-800 hover:bg-zinc-900 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition shadow-md whitespace-nowrap">
+                                                <i class="fas fa-paper-plane mr-1"></i> Tambah Log
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- STEP 9 -->
                         <div id="step-9" class="step-content no-print">
-                            <h3 class="text-xl lg:text-2xl font-bold text-zinc-900 tracking-tight mb-2 text-center mt-4">Cetak Dokumen Kunjungan</h3>
-                            <p class="text-zinc-500 mb-8 max-w-md mx-auto text-center text-xs lg:text-sm px-4">Sistem akan mencetak data rekam medis <strong class="text-zinc-800">sesuai dengan tanggal kunjungan yang sedang dibuka</strong>.</p>
+                            <h3 class="text-xl lg:text-2xl font-bold text-zinc-900 tracking-tight mb-2 text-center mt-4">Ekspor Dokumen Medis</h3>
+                            <p class="text-zinc-500 mb-10 max-w-md mx-auto text-center text-xs lg:text-sm px-4">Sistem akan otomatis memilihkan <strong class="text-zinc-800">Template Bersalin atau Template Standar</strong> berdasarkan layanan pasien.</p>
                             
                             <div class="max-w-xl mx-auto px-2">
                                 <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 lg:p-8 text-center relative overflow-hidden shadow-xl">
                                     <div class="absolute -right-6 -top-6 lg:-right-10 lg:-top-10 text-8xl lg:text-9xl text-zinc-800 opacity-50 pointer-events-none"><i class="fas fa-file-powerpoint"></i></div>
                                     <div class="w-16 h-16 lg:w-20 lg:h-20 bg-white/10 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl lg:text-3xl backdrop-blur-md border border-white/20"><i class="fas fa-magic"></i></div>
                                     <h4 class="font-bold text-white mb-2 text-base lg:text-lg">Generate Dokumen Pintar</h4>
-                                    <p class="text-[10px] lg:text-xs text-zinc-400 mb-6 px-4">Mengisi variabel data secara otomatis ke Template Google Slides Anda.</p>
+                                    <p class="text-[10px] lg:text-xs text-zinc-400 mb-6 px-4">Sistem akan otomatis memilih <b>Template Bersalin</b> jika rute layanan mengandung Bersalin.</p>
                                     
                                     <button type="button" onclick="generateSlideDocument()" class="w-full bg-white hover:bg-zinc-200 text-zinc-900 font-bold py-3.5 rounded-xl transition shadow-lg flex items-center justify-center gap-2 text-sm active:scale-95">
                                         <i class="fas fa-file-pdf"></i> Generate File Sekarang
@@ -603,11 +650,10 @@
         let isEditMode = false; 
         let chartLayanan, chartStatus;
         
-        let windowAllPatientsData = []; // Semua data mentah dari cloud
-        let globalFilteredData = []; // Data yang sudah difilter rentang waktunya (semua kunjungan)
-        let latestVisitsData = []; // Data per-pasien unik yang paling terbaru di rentang waktu tsb
+        let windowAllPatientsData = []; 
+        let globalFilteredData = []; 
+        let latestVisitsData = []; 
 
-        // --- SISTEM SIDEBAR MOBILE ---
         let isSidebarOpen = false;
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -624,7 +670,6 @@
             }
         }
 
-        // --- FUNGSI PARSING & FORMAT TANGGAL YANG ROBUST ---
         function parseIndonesianDate(dateStr) {
             if (!dateStr) return new Date(0);
             const parts = dateStr.split(' ');
@@ -636,12 +681,8 @@
             const monthStr = parts[1].toLowerCase();
             const year = parseInt(parts[2]);
             const months = { 'januari':0, 'februari':1, 'maret':2, 'april':3, 'mei':4, 'juni':5, 'juli':6, 'agustus':7, 'september':8, 'oktober':9, 'november':10, 'desember':11 };
-
             let month = months[monthStr];
-            if(month === undefined) {
-                 let d = new Date(dateStr);
-                 return isNaN(d.getTime()) ? new Date(0) : d;
-            }
+            if(month === undefined) { let d = new Date(dateStr); return isNaN(d.getTime()) ? new Date(0) : d; }
             return new Date(year, month, day);
         }
 
@@ -651,9 +692,7 @@
                 let d = new Date(str);
                 if (isNaN(d.getTime())) return str;
                 return d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
-            } catch(e) {
-                return str;
-            }
+            } catch(e) { return str; }
         }
 
         function calculateAge() {
@@ -683,21 +722,14 @@
             tbody.innerHTML = '';
             
             let filtered = [];
-            if(statusFilter === 'Semua Pasien') {
-                filtered = latestVisitsData;
-            } else if (statusFilter === 'Aktif/Dalam Perawatan') {
-                filtered = latestVisitsData.filter(p => !p.STATUS_PASIEN_AKHIR || p.STATUS_PASIEN_AKHIR === statusFilter);
-            } else {
-                filtered = latestVisitsData.filter(p => p.STATUS_PASIEN_AKHIR === statusFilter);
-            }
+            if(statusFilter === 'Semua Pasien') { filtered = latestVisitsData; } 
+            else if (statusFilter === 'Aktif/Dalam Perawatan') { filtered = latestVisitsData.filter(p => !p.STATUS_PASIEN_AKHIR || p.STATUS_PASIEN_AKHIR === statusFilter); } 
+            else { filtered = latestVisitsData.filter(p => p.STATUS_PASIEN_AKHIR === statusFilter); }
 
             if(filtered.length === 0) {
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('block');
+                emptyState.classList.remove('hidden'); emptyState.classList.add('block');
             } else {
-                emptyState.classList.add('hidden');
-                emptyState.classList.remove('block');
-                
+                emptyState.classList.add('hidden'); emptyState.classList.remove('block');
                 filtered.forEach(p => {
                     const tr = document.createElement('tr');
                     tr.className = "bg-white border-b border-zinc-100";
@@ -714,20 +746,16 @@
                 });
             }
         }
-        
         function closeListModal() { document.getElementById('list-modal').classList.remove('active'); }
 
-        // --- SISTEM FILTER WAKTU & PERHITUNGAN DASHBOARD ---
         function applyGlobalFilter() {
             const startVal = document.getElementById('global-filter-start').value;
             const endVal = document.getElementById('global-filter-end').value;
-
             globalFilteredData = windowAllPatientsData;
 
             if (startVal && endVal) {
                 const start = new Date(startVal); start.setHours(0,0,0,0);
                 const end = new Date(endVal); end.setHours(23,59,59,999);
-
                 globalFilteredData = windowAllPatientsData.filter(p => {
                     const pDate = parseIndonesianDate(p.TIMESTAMP);
                     if (isNaN(pDate.getTime())) return true;
@@ -749,15 +777,9 @@
                 });
             }
 
-            // Dapatkan Data Pasien Unik (hanya 1 kunjungan paling akhir untuk RME yang sama)
             let mapVisits = {};
-            globalFilteredData.forEach(p => {
-                if(p.RME && !mapVisits[p.RME]) {
-                    mapVisits[p.RME] = p; // Mengambil object pertama yang terdeteksi per RME (karena reverse data dari backend)
-                }
-            });
+            globalFilteredData.forEach(p => { if(p.RME && !mapVisits[p.RME]) mapVisits[p.RME] = p; });
             latestVisitsData = Object.values(mapVisits);
-
             updateDashboardCounters();
             renderPatientTable(latestVisitsData);
         }
@@ -769,10 +791,8 @@
         }
 
         function updateDashboardCounters() {
-            // METRIK PASIEN UNIK
             let totalUnik = latestVisitsData.length;
             let bersalin = 0, aktif = 0, rujuk = 0;
-
             latestVisitsData.forEach(p => {
                 let st = p.STATUS_PASIEN_AKHIR || "Aktif/Dalam Perawatan";
                 if(st === 'Selesai Bersalin di Klinik') bersalin++;
@@ -785,7 +805,6 @@
             document.getElementById('dash-aktif').textContent = aktif;
             document.getElementById('dash-rujuk').textContent = rujuk;
 
-            // METRIK LAYANAN (Dihitung berdasarkan SEMUA kunjungan di rentang waktu, bukan pasien unik)
             let l_spa = 0, l_senam = 0, l_usg = 0, l_anc = 0, l_bersalin = 0;
             globalFilteredData.forEach(p => {
                 let lay = p.JENISLAYANAN || "";
@@ -808,7 +827,6 @@
             }
         }
 
-        // --- SISTEM TABEL DAN CETAK ---
         function renderPatientTable(dataArray) {
             const tbody = document.getElementById('database-table-body');
             tbody.innerHTML = '';
@@ -821,9 +839,7 @@
                 const tr = document.createElement('tr');
                 tr.className = "bg-white hover:bg-zinc-50/50 border-b border-zinc-100 transition";
                 
-                // Perbaikan split tanggal agar dapat format Lengkap (Tgl Bulan Tahun)
                 let tgl = p.TIMESTAMP ? p.TIMESTAMP.split(' ').slice(0, 3).join(' ') : "-";
-                
                 let statusBadge = "";
                 const st = p.STATUS_PASIEN_AKHIR || "Aktif/Dalam Perawatan";
                 if(st.includes("Bersalin di Klinik")) statusBadge = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-md text-[9px] lg:text-[10px] font-bold whitespace-nowrap">SELESAI BERSALIN</span>`;
@@ -869,7 +885,6 @@
             
             const startVal = document.getElementById('global-filter-start').value;
             const endVal = document.getElementById('global-filter-end').value;
-            
             if (startVal && endVal) dateTitle = `Periode: ${formatShortDate(startVal)} - ${formatShortDate(endVal)}`;
             else if (startVal) dateTitle = `Mulai Periode: ${formatShortDate(startVal)}`;
             else if (endVal) dateTitle = `Hingga Periode: ${formatShortDate(endVal)}`;
@@ -890,10 +905,7 @@
                     th { background-color: #f3f4f6; font-weight: bold; text-transform: uppercase; font-size: 10px; color: #374151;}
                     tr:nth-child(even) { background-color: #f9fafb; }
                     .footer { text-align: right; font-size: 10px; color: #9ca3af; margin-top: 20px;}
-                    @media print {
-                        @page { size: landscape; margin: 10mm; }
-                        body { padding: 0; }
-                    }
+                    @media print { @page { size: landscape; margin: 10mm; } body { padding: 0; } }
                 </style>
             </head>
             <body>
@@ -937,19 +949,10 @@
                 `;
             });
 
-            html += `
-                    </tbody>
-                </table>
-                <div class="footer">Dicetak otomatis dari Sistem EMR pada: ${new Date().toLocaleString('id-ID')} WIB</div>
-            </body>
-            </html>
-            `;
+            html += `</tbody></table><div class="footer">Dicetak otomatis dari Sistem EMR pada: ${new Date().toLocaleString('id-ID')} WIB</div></body></html>`;
             printWindow.document.write(html);
             printWindow.document.close();
-            // Memberikan sedikit waktu agar render HTML selesai sebelum dialog print muncul
-            setTimeout(() => {
-                printWindow.print();
-            }, 300);
+            setTimeout(() => { printWindow.print(); }, 300);
         }
 
         function initCharts() {
@@ -977,10 +980,9 @@
             try {
                 const res = await fetch(`${GAS_URL}?action=getAll`);
                 const result = await res.json();
-                
                 if(result.status === "success") {
                     windowAllPatientsData = result.data; 
-                    applyGlobalFilter(); // Terapkan logika penyaringan tanggal secara langsung saat pertama Load
+                    applyGlobalFilter(); 
                 }
             } catch (e) {
                 showToast("Gagal Sinkronisasi", "Koneksi terputus.", true);
@@ -988,12 +990,9 @@
             setLoading(false);
         }
 
-        // --- SISTEM TIMELINE & KUNJUNGAN ---
         function renderTimeline(rme, activeVisitId) {
             const container = document.getElementById('timeline-container');
             container.innerHTML = '';
-            
-            // Ambil SEMUA kunjungan untuk RME ini
             const patientVisits = windowAllPatientsData.filter(p => p.RME === rme);
             
             if(patientVisits.length === 0) {
@@ -1003,9 +1002,8 @@
 
             patientVisits.forEach((visit, index) => {
                 const isActive = visit.VISIT_ID === activeVisitId || (!activeVisitId && index === 0);
-                let tgl = visit.TIMESTAMP ? visit.TIMESTAMP.split(' ')[0] : "Data Lama";
-                let lay = visit.JENISLAYANAN || "Pemeriksaan";
                 let tglLengkap = visit.TIMESTAMP || "-";
+                let lay = visit.JENISLAYANAN || "Pemeriksaan";
                 
                 const node = document.createElement('div');
                 node.className = "relative pl-6 lg:pl-8 group";
@@ -1030,22 +1028,15 @@
             
             const isHistorical = patientVisits.length > 0 && activeVisitId && patientVisits[0].VISIT_ID !== activeVisitId;
             const banner = document.getElementById('historical-banner');
-            if(isHistorical) {
-                banner.classList.remove('hidden');
-            } else {
-                banner.classList.add('hidden');
-            }
+            if(isHistorical) banner.classList.remove('hidden');
+            else banner.classList.add('hidden');
         }
 
         function editPatientByData(rmeToFind, visitIdToFind = null) {
             closeListModal();
-            
             let p;
-            if (visitIdToFind) {
-                p = windowAllPatientsData.find(x => x.VISIT_ID === visitIdToFind);
-            } else {
-                p = latestVisitsData.find(x => x.RME === rmeToFind);
-            }
+            if (visitIdToFind) p = windowAllPatientsData.find(x => x.VISIT_ID === visitIdToFind);
+            else p = latestVisitsData.find(x => x.RME === rmeToFind);
             
             if(!p) return showToast("Gagal", "Data spesifik tidak ditemukan", true);
 
@@ -1083,7 +1074,6 @@
 
             if(p['STATUS_PASIEN_AKHIR']) document.querySelector('select[name="STATUS_PASIEN_AKHIR"]').value = p['STATUS_PASIEN_AKHIR'];
             toggleAlasanBatal();
-            
             setEditMode(true, p.RME);
             renderTimeline(p.RME, p.VISIT_ID);
             
@@ -1099,7 +1089,7 @@
             const baseData = latestVisitsData.find(x => x.RME === rme);
             if(!baseData) return;
 
-            if(!confirm(`Buka kunjungan baru hari ini untuk pasien ${baseData.NAMAPASIEN}? Data identitas akan dipertahankan, dan kolom medis akan dikosongkan.`)) return;
+            if(!confirm(`Buka kunjungan baru hari ini untuk pasien ${baseData.NAMAPASIEN}? Identitas aman, kolom medis dikosongkan.`)) return;
 
             const fieldsToClear = [
                 'VISIT_ID', 'JENISLAYANAN', 'KELUHAN', 'DIAGNOSA', 'TDPASIEN', 'NPASIEN', 'PPASIEN', 
@@ -1130,6 +1120,35 @@
             else formBatal.classList.add('hidden');
         }
 
+        function tambahCatatan() {
+            const input = document.getElementById('input-catatan-baru');
+            const teks = input.value.trim();
+            if(!teks) return;
+            const textarea = document.getElementById('riwayat-text');
+            const date = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'});
+            textarea.value = `[${date}] - ${teks}\n` + textarea.value; 
+            input.value = "";
+        }
+
+        function catatGantiBidan(stepNum) {
+            const inputBidan = document.getElementById(`bidan-pengganti-${stepNum}`);
+            const inputAlasan = document.getElementById(`alasan-ganti-${stepNum}`);
+            const bidan = inputBidan.value.trim();
+            const alasan = inputAlasan.value.trim();
+            if(!bidan || !alasan) return showToast("Peringatan", "Nama & Alasan wajib diisi!", true);
+
+            const date = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+            const logBidan = document.getElementById('riwayat-ganti-bidan-log');
+            logBidan.value = `[${date}] Bidan Baru: ${bidan} | Ket: ${alasan}\n` + logBidan.value;
+            const logUtama = document.getElementById('riwayat-text');
+            logUtama.value = `[${date}] - Pergantian Bidan PIC ke ${bidan} (${alasan})\n` + logUtama.value;
+
+            inputBidan.value = ""; inputAlasan.value = "";
+            document.getElementById(`toggle-ganti-bidan-${stepNum}`).checked = false;
+            document.getElementById(`ganti-bidan-form-${stepNum}`).classList.add('hidden');
+            showToast("Log Tersimpan", "Pergantian direkam ke Histori.");
+        }
+
         function init() {
             renderSidebar();
             updateStepView();
@@ -1144,7 +1163,6 @@
             isEditMode = state;
             const badge = document.getElementById('mode-badge');
             const btnSave = document.getElementById('btn-save-sidebar');
-
             if(state) {
                 badge.className = "mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 bg-zinc-900 text-white rounded-lg text-[11px] font-bold border border-zinc-800 transition-colors";
                 badge.innerHTML = `<i class="fas fa-user-edit"></i> Pasien: ${rme}`;
@@ -1163,6 +1181,10 @@
             autoGenerateRME();
             setTimestamp();
             toggleAlasanBatal();
+            document.getElementById('toggle-ganti-bidan-6').checked = false;
+            document.getElementById('ganti-bidan-form-6').classList.add('hidden');
+            document.getElementById('toggle-ganti-bidan-7').checked = false;
+            document.getElementById('ganti-bidan-form-7').classList.add('hidden');
             document.getElementById('tempat_lahir_input').value = '';
             document.getElementById('tgl_lahir_input').value = '';
             document.getElementById('timeline-container').innerHTML = `<div class="text-center text-xs text-zinc-400 mt-10">Daftarkan pasien terlebih dahulu.</div>`;
@@ -1201,7 +1223,6 @@
             document.getElementById('btn-prev').style.display = currentStep === 1 ? 'none' : 'block';
             document.getElementById('btn-next').style.display = currentStep === steps.length ? 'none' : 'block';
             
-            // Tampilkan Filter Global hanya di Tahap 1 (Dashboard) dan Tahap 2 (Database)
             document.getElementById('global-filter-bar').style.display = (currentStep <= 2) ? 'flex' : 'none';
 
             const fw = document.getElementById('form-wrapper');
@@ -1240,28 +1261,6 @@
             setTimeout(() => { t.classList.add('-translate-y-32', 'opacity-0'); t.classList.remove('opacity-100'); }, 4000);
         }
 
-        function getFormData() {
-            const form = document.getElementById('emr-form');
-            const data = {};
-            for (let [k, v] of new FormData(form).entries()) {
-                if(k !== "JENISLAYANAN") data[k] = v;
-            }
-            const layanans = [];
-            document.querySelectorAll('input[name="JENISLAYANAN"]:checked').forEach(cb => layanans.push(cb.value));
-            data['JENISLAYANAN'] = layanans.join(", ");
-            
-            const tempatLahir = document.getElementById('tempat_lahir_input').value;
-            const tglLahir = document.getElementById('tgl_lahir_input').value;
-            let formattedTgl = tglLahir;
-            if(tglLahir) {
-                const parts = tglLahir.split('-');
-                formattedTgl = `${parts[2]}/${parts[1]}/${parts[0]}`; 
-            }
-            data['TTL'] = `${tempatLahir}, ${formattedTgl}`;
-            data['GPA'] = `G${data['GPA_G']||'-'} P${data['GPA_P']||'-'} A${data['GPA_A']||'-'}`;
-            return data;
-        }
-
         async function saveToDatabase() {
             const data = getFormData();
             if (!data.RME) return showToast("Gagal", "RME tidak boleh kosong", true);
@@ -1276,9 +1275,7 @@
                     
                     if(!isEditMode) setEditMode(true, data.RME);
                     await syncAllData(); 
-                    
                     if(data.RME) editPatientByData(data.RME);
-                    
                 } catch (e) { 
                     setLoading(false);
                     showToast("Gagal Menyimpan", "Cek koneksi internet Anda.", true); 
@@ -1296,7 +1293,7 @@
             if(!rme || !isEditMode) return showToast("Peringatan", "Simpan data ke Cloud dahulu.", true);
             if (!GAS_URL.includes("http")) return showToast("Demo", "Fitur ini membutuhkan URL backend AppScript.", true);
 
-            setLoading(true, "Mencetak Data Kunjungan Spesifik...");
+            setLoading(true, "Mencetak Dokumen...");
             try {
                 const res = await fetch(`${GAS_URL}?action=generateSlide&rme=${rme}&visitId=${visitId}`);
                 const contentType = res.headers.get("content-type");
@@ -1307,7 +1304,7 @@
                 setLoading(false);
 
                 if (result.status === "success") {
-                    showToast("Berhasil!", "Silakan klik tombol Unduh PDF.");
+                    showToast("Berhasil!", result.message);
                     const rDiv = document.getElementById('slide-result');
                     rDiv.classList.remove('hidden'); rDiv.classList.add('flex');
                     document.getElementById('link-pdf').href = result.pdfUrl;
